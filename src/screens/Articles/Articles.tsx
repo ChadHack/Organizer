@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/empty"
 import { EmptyStateIllustration } from "@/components/ui/empty-state-illustration"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { cn } from "@/lib/utils"
+import { cn, fmtPrice } from "@/lib/utils"
 import groupBy from "lodash/groupBy"
 import {
   Download,
@@ -455,6 +455,11 @@ const Articles = () => {
         <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-5">
           {[1, 2, 3, 4, 5].map((level) => {
             const count = articleByPriority[String(level)]?.length ?? 0
+            const amount =
+              articleByPriority[String(level)]?.reduce(
+                (total, a) => total + (a.price ?? 0),
+                0
+              ) ?? 0
             const strong = level <= 2
             return (
               <Card key={level} className="p-4.5">
@@ -465,6 +470,9 @@ const Articles = () => {
                     </p>
                     <p className="mt-1.5 font-heading text-2xl leading-none">
                       {count}
+                    </p>
+                    <p className="mt-1.5 font-heading text-sm leading-none text-primary">
+                      {fmtPrice(amount)}
                     </p>
                   </div>
                   <span
