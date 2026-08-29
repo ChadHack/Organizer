@@ -1,0 +1,7 @@
+node_modules
+dist
+dist-ssr
+pb_data
+.git
+.env
+*.local

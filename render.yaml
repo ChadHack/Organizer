@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: organizer-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    healthCheckPath: /api/health
+    disk:
+      name: pb-data
+      mountPath: /pb/pb_data
+      sizeGB: 1
+    envVars: []
+
+  - type: web
+    name: organizer-frontend
+    runtime: static
+    buildCommand: corepack enable && pnpm install && pnpm build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_POCKETBASE_URL
+        sync: false
