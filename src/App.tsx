@@ -1,7 +1,7 @@
 import { lazy, Suspense } from "react"
 import { Route, Routes } from "react-router-dom"
 import AppLayout from "./App-layout"
-import RippleSpinner from "./components/shadcn-space/radix/spinner/spinner-09"
+import { RippleSpinner } from "./components/shadcn-space/radix/spinner/spinner-09"
 import { Toaster } from "./components/ui/sonner"
 
 // Chargées à la demande : chaque écran embarque ses propres dépendances
