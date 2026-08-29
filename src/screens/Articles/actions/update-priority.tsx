@@ -3,7 +3,7 @@
 import type { Article } from "@/api/interfaces/article.interface"
 import { useArticleStore } from "@/api/stores/article.store"
 import { usePriorityStore } from "@/api/stores/priority.store"
-import RippleSpinner from "@/components/shadcn-space/radix/spinner/spinner-09"
+import { RippleSpinner } from "@/components/shadcn-space/radix/spinner/spinner-09"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,

@@ -169,7 +169,7 @@ export function AnimatedTabs({
                 "relative z-0 h-9 shrink-0 cursor-pointer gap-1.5 rounded-full border-none bg-transparent px-4 font-heading text-sm shadow-none transition-colors outline-none after:hidden data-active:bg-transparent data-active:shadow-none",
                 isActive
                   ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
+                  : "text-muted-foreground hover:text-foreground dark:hover:text-black"
               )}
             >
               {isActive && (
@@ -267,9 +267,8 @@ function TableData({
     try {
       // Chargé à la demande : exceljs et jspdf ne pèsent que sur le clic
       // "Extraire", pas sur le chargement initial de l'écran Articles.
-      const { exportArticlesToExcel, exportArticlesToPdf } = await import(
-        "./export-articles"
-      )
+      const { exportArticlesToExcel, exportArticlesToPdf } =
+        await import("./export-articles")
       if (format === "excel") {
         await exportArticlesToExcel(filteredData)
       } else {

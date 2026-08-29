@@ -4,15 +4,13 @@ import { useArticleStore } from "@/api/stores/article.store"
 import { PageHeader } from "@/components/page-header"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { cn } from "@/lib/utils"
+import { cn, fmtPrice } from "@/lib/utils"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
 import { ArrowRight, ChartPie } from "lucide-react"
 import { motion } from "motion/react"
 import { useEffect, useMemo } from "react"
 import { useNavigate } from "react-router-dom"
-
-const fmt = (n: number) => n.toLocaleString("fr-FR") + " Fcfa"
 
 function progressColor(pct: number) {
   if (pct <= 50) return "bg-accent-500"
@@ -180,7 +178,9 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 gap-4.5 md:grid-cols-2 xl:grid-cols-[1fr_1fr_1.4fr]">
         <Card className="p-6.5">
           <p className="text-sm text-neutral-700">Coût total planifié</p>
-          <h3 className="mt-1.5 text-[30px] leading-tight">{fmt(totalCost)}</h3>
+          <h3 className="mt-1.5 text-[30px] leading-tight">
+            {fmtPrice(totalCost)}
+          </h3>
           <div className="mt-3.5 flex items-center gap-2 text-xs text-accent-700">
             Somme des articles non annulés
           </div>
@@ -188,7 +188,9 @@ const Dashboard = () => {
 
         <Card className="p-6.5">
           <p className="text-sm text-neutral-700">Budget engagé</p>
-          <h3 className="mt-1.5 text-[30px] leading-tight">{fmt(engaged)}</h3>
+          <h3 className="mt-1.5 text-[30px] leading-tight">
+            {fmtPrice(engaged)}
+          </h3>
           <div className="mt-3.5 h-3 overflow-hidden rounded-full bg-neutral-200">
             <div
               className="h-full rounded-full bg-primary"
@@ -205,7 +207,7 @@ const Dashboard = () => {
             <h3 className="text-[19px]">Avancement par action</h3>
             <button
               type="button"
-              onClick={() => navigate("/")}
+              onClick={() => navigate("/actions")}
               className="cursor-pointer border-0 bg-transparent font-heading text-[13px] text-accent-700"
             >
               Tout voir

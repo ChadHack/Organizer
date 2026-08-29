@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/empty"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
+import { fmtPrice } from "@/lib/utils"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
 import {
@@ -199,7 +200,7 @@ const ArticleDetails = () => {
                 <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
                   <Tag className="size-3.5 text-muted-foreground" />
                   {article.price !== undefined
-                    ? article.price.toLocaleString("fr-FR")
+                    ? fmtPrice(article.price)
                     : "Non défini"}
                 </span>
               </div>

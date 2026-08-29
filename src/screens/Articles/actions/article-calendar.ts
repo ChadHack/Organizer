@@ -1,5 +1,6 @@
 import type { Article } from "@/api/interfaces/article.interface"
 import type { CalendarEvent, EventTone } from "@/components/calendar"
+import { fmtPrice } from "@/lib/utils"
 
 /** Ton associé à chaque statut d'article, pour les distinguer d'un coup d'œil. */
 const STATUS_TONES: Record<Article["status"], EventTone> = {
@@ -29,7 +30,7 @@ export function articlesToEvents(articles: Article[]): CalendarEvent[] {
           ? [{ label: "Action", value: article.action.name }]
           : []),
         ...(article.price !== undefined
-          ? [{ label: "Prix", value: `${article.price}` }]
+          ? [{ label: "Prix", value: `${fmtPrice(article.price)}` }]
           : []),
       ],
     }

@@ -1,4 +1,6 @@
 import type { Article } from "@/api/interfaces/article.interface"
+import { pb } from "@/lib/pocketbase"
+import { fmtPrice } from "@/lib/utils"
 import { Workbook } from "exceljs"
 import { jsPDF } from "jspdf"
 import autoTable from "jspdf-autotable"
@@ -9,12 +11,17 @@ function formatDate(date: Date) {
   return dateFormatter.format(date)
 }
 
-function formatPrice(price?: number) {
-  return price !== undefined ? price.toLocaleString("fr-FR") : "-"
-}
-
 function timestamp() {
   return new Date().toISOString().slice(0, 10)
+}
+
+/**
+ * jsPDF's standard fonts only support Latin-1 codepoints and mangle
+ * characters outside that range (e.g. the narrow no-break space used by
+ * `toLocaleString("fr-FR")` as a thousands separator renders as "/").
+ */
+function pdfSafeText(text: string) {
+  return text.replace(/[  ]/g, " ")
 }
 
 function downloadBlob(blob: Blob, filename: string) {
@@ -26,6 +33,22 @@ function downloadBlob(blob: Blob, filename: string) {
   link.click()
   document.body.removeChild(link)
   URL.revokeObjectURL(url)
+}
+
+/**
+ * Product image CDNs (e.g. media.takealot.com) don't send
+ * Access-Control-Allow-Origin, so the browser refuses to read their pixels
+ * into a canvas. Route those through wsrv.nl, a public image proxy that
+ * re-serves the image with permissive CORS headers. Our own PocketBase
+ * files already have CORS enabled, so they're loaded directly.
+ */
+function toExportableImageUrl(url: string) {
+  try {
+    if (new URL(url).origin === new URL(pb.baseUrl).origin) return url
+  } catch {
+    // Relative or malformed URL: fall through and let the proxy attempt it.
+  }
+  return `https://wsrv.nl/?url=${encodeURIComponent(url)}`
 }
 
 /**
@@ -59,9 +82,12 @@ function loadImageAsPngDataUrl(url: string): Promise<string | null> {
 
 async function loadArticleImages(articles: Article[]) {
   return Promise.all(
-    articles.map((article) =>
-      article.image ? loadImageAsPngDataUrl(article.image) : Promise.resolve(null)
-    )
+    articles.map((article) => {
+      const imageUrl = article.image ?? article.imageUrl
+      return imageUrl
+        ? loadImageAsPngDataUrl(toExportableImageUrl(imageUrl))
+        : Promise.resolve(null)
+    })
   )
 }
 
@@ -99,7 +125,7 @@ export async function exportArticlesToExcel(articles: Article[]) {
       priority: article.priority?.priority ?? "N/A",
       action: article.action?.name ?? "N/A",
       quantity: article.quantity,
-      price: formatPrice(article.price),
+      price: article.price ? fmtPrice(article.price) : "-",
       estimateDate: formatDate(article.estimateDate),
       link: article.link ?? "",
     })
@@ -144,31 +170,34 @@ export async function exportArticlesToPdf(articles: Article[]) {
       [
         "Image",
         "Nom",
-        "Description",
         "Statut",
         "Priorité",
-        "Action",
+        // "Action",
         "Qté",
         "Prix",
-        "Date estimée",
+        "Lien",
+        // "Date estimée",
       ],
     ],
     body: articles.map((article) => [
       "",
       article.name,
-      article.description,
       article.status,
       article.priority?.priority !== undefined
         ? String(article.priority.priority)
         : "N/A",
-      article.action?.name ?? "N/A",
+      // article.action?.name ?? "N/A",
       String(article.quantity),
-      formatPrice(article.price),
-      formatDate(article.estimateDate),
+      article.price ? pdfSafeText(fmtPrice(article.price)) : "N/A",
+      article.link ?? "N/A",
+      // formatDate(article.estimateDate),
     ]),
     styles: { fontSize: 8, cellPadding: 6, valign: "middle" },
     headStyles: { fillColor: [30, 41, 59], textColor: 255 },
-    columnStyles: { 0: { cellWidth: 46, minCellHeight: 40 } },
+    columnStyles: {
+      0: { cellWidth: 46, minCellHeight: 40 },
+      5: { cellWidth: 70 },
+    },
     rowPageBreak: "avoid",
     didDrawCell: (data) => {
       if (data.section !== "body" || data.column.index !== 0) return

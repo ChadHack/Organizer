@@ -23,7 +23,7 @@ const sizeConfig = {
   },
 } as const
 
-const RippleSpinner = memo(
+export const RippleSpinner = memo(
   ({ size = "md", className, ...props }: RippleSpinnerProps) => {
     const config = sizeConfig[size as keyof typeof sizeConfig] || sizeConfig.md
 
@@ -62,5 +62,3 @@ const RippleSpinner = memo(
 )
 
 RippleSpinner.displayName = "RippleSpinner"
-
-export default RippleSpinner

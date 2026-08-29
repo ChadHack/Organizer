@@ -13,11 +13,11 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu"
 import { Separator } from "@/components/ui/separator"
-import { cn } from "@/lib/utils"
-import { ARTICLE_STATUS_CONFIG } from "@/screens/Articles/article-status"
+import { cn, fmtPrice } from "@/lib/utils"
 import UpdateArticle from "@/screens/Articles/actions/update-article"
 import { UpdatePriority } from "@/screens/Articles/actions/update-priority"
 import { getArticleActionGroups } from "@/screens/Articles/article-actions"
+import { ARTICLE_STATUS_CONFIG } from "@/screens/Articles/article-status"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
 import { ExternalLink, Flag, Layers, Package, Tag } from "lucide-react"
@@ -167,7 +167,7 @@ export const ArticleCard = ({
                       <Tag className="size-4 shrink-0" />
                       <span>
                         {article.price !== undefined
-                          ? article.price.toLocaleString("fr-FR")
+                          ? fmtPrice(article.price)
                           : "Prix non défini"}
                       </span>
                     </div>

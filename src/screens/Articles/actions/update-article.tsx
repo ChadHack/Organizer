@@ -4,7 +4,7 @@ import type { Article } from "@/api/interfaces/article.interface"
 import { useActionStore } from "@/api/stores/action.store"
 import { useArticleStore } from "@/api/stores/article.store"
 import FileUpload from "@/components/shadcn-space/radix/file-upload/file-upload-01"
-import RippleSpinner from "@/components/shadcn-space/radix/spinner/spinner-09"
+import { RippleSpinner } from "@/components/shadcn-space/radix/spinner/spinner-09"
 import { StepperIndicator } from "@/components/stepper-indicator"
 import { Button } from "@/components/ui/button"
 import {

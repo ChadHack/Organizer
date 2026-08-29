@@ -72,7 +72,7 @@ export default function DetailsAction({
         <div className="flex flex-col gap-3">
           <p className="text-sm text-muted-foreground">Articles</p>
           {action.articles.length > 0 ? (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid custom-scrollbar h-96 grid-cols-2 gap-3 overflow-y-auto pr-1">
               {action.articles.map(({ name, description, image, id }) => (
                 <Link
                   to={"articles/" + id}

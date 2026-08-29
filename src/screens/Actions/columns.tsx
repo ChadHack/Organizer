@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
-import { cn } from "@/lib/utils"
+import { cn, fmtPrice } from "@/lib/utils"
 import type { ColumnDef } from "@tanstack/react-table"
 import { ArrowUpDown } from "lucide-react"
 import { ACTION_STATUS_CONFIG } from "./action-status"
@@ -88,7 +88,7 @@ export const actionColumns: ColumnDef<DataTableFeatures, Action>[] = [
           <Progress
             value={percent}
             className={cn(
-              "**:data-[slot='progress-indicator']:duration-1000! **:data-[slot='progress-track']:h-2! bg-neutral-200",
+              "bg-neutral-200 **:data-[slot='progress-indicator']:duration-1000! **:data-[slot='progress-track']:h-2!",
               percent <= 50
                 ? "**:data-[slot='progress-indicator']:bg-accent-500!"
                 : percent <= 75
@@ -104,7 +104,9 @@ export const actionColumns: ColumnDef<DataTableFeatures, Action>[] = [
     accessorKey: "cost",
     header: "Coût",
     cell: ({ row }) => (
-      <div className="text-muted-foreground">{row.getValue("cost")} Fcfa</div>
+      <div className="text-muted-foreground">
+        {fmtPrice(row.getValue("cost"))}
+      </div>
     ),
   },
   {

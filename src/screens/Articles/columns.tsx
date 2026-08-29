@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import { fmtPrice } from "@/lib/utils"
 import type { ColumnDef } from "@tanstack/react-table"
 import { ArrowUpDown, Package } from "lucide-react"
 import { ActionsCell } from "./actions-cell"
@@ -43,10 +44,7 @@ export const articleColumns: ColumnDef<DataTableFeatures, Article>[] = [
     cell: ({ row }) => (
       <div className="text-muted-foreground">
         <Avatar size="lg">
-          <AvatarImage
-            src={row.getValue("image")}
-            alt={row.original.name}
-          />
+          <AvatarImage src={row.getValue("image")} alt={row.original.name} />
           <AvatarFallback>
             <Package className="size-4" />
           </AvatarFallback>
@@ -114,6 +112,15 @@ export const articleColumns: ColumnDef<DataTableFeatures, Article>[] = [
       const action = row.getValue<{ name?: string }>(columnId)
       return action?.name === value
     },
+  },
+  {
+    accessorKey: "price",
+    header: "Prix",
+    cell: ({ row }) => (
+      <div className="text-muted-foreground">
+        {fmtPrice(row.getValue("price"))}
+      </div>
+    ),
   },
   {
     id: "actions",

@@ -1,7 +1,7 @@
 "use client"
 
 import { useActionStore } from "@/api/stores/action.store"
-import RippleSpinner from "@/components/shadcn-space/radix/spinner/spinner-09"
+import { RippleSpinner } from "@/components/shadcn-space/radix/spinner/spinner-09"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
