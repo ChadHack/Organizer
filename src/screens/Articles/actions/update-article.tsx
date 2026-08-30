@@ -368,7 +368,7 @@ export default function UpdateArticle({
                 </div>
               )}
             </div>
-            <div className="flex-1">
+            <div className="hidden md:block">
               <div className="flex flex-col gap-6">
                 <div className="flex flex-col gap-1">
                   <h6 className="text-sm font-medium text-primary">

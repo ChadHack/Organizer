@@ -29,7 +29,7 @@ export const ACTION_STATUS_CONFIG: Record<
   },
   Annulée: {
     icon: Ban,
-    badgeClassName: "bg-neutral-300 text-neutral-700",
-    dotClassName: "bg-neutral-500",
+    badgeClassName: "bg-red-300 text-red-700",
+    dotClassName: "bg-red-500",
   },
 }

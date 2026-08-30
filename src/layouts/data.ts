@@ -2,12 +2,12 @@ import type { NavGroup } from "@/api/interfaces/navigation.interface"
 import {
   CalendarDays,
   LayoutDashboard,
-  ListChecks,
   Package,
+  ShoppingCart,
   Workflow,
 } from "lucide-react"
 
-const NavData: NavGroup[] = [
+export const NavData: NavGroup[] = [
   {
     type: "link",
     label: "Tableau de bord",
@@ -23,7 +23,7 @@ const NavData: NavGroup[] = [
   {
     type: "link",
     label: "Liste des articles",
-    icon: ListChecks,
+    icon: ShoppingCart,
     href: "/articles",
   },
   {
@@ -36,8 +36,6 @@ const NavData: NavGroup[] = [
     type: "link",
     label: "Plannification",
     icon: CalendarDays,
-    href: "/plannification",
+    href: "/planification",
   },
 ]
-
-export default NavData

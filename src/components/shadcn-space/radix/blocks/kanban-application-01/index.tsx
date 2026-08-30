@@ -8,9 +8,11 @@ import {
   DndContext,
   DragOverlay,
   PointerSensor,
-  closestCorners,
+  pointerWithin,
+  rectIntersection,
   useSensor,
   useSensors,
+  type CollisionDetection,
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core"
@@ -36,6 +38,12 @@ const KanbanApplication = () => {
       })),
     [articles]
   )
+
+  const collisionDetectionStrategy: CollisionDetection = (args) => {
+    const pointerCollisions = pointerWithin(args)
+    if (pointerCollisions.length > 0) return pointerCollisions
+    return rectIntersection(args)
+  }
 
   const findStatus = (id: string): KanbanStatus | null => {
     const byColumn = statusColumns.find((col) => col.id === id)
@@ -64,7 +72,7 @@ const KanbanApplication = () => {
     <div className="mx-auto h-full w-full max-w-7xl rounded-none ring-0">
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCorners}
+        collisionDetection={collisionDetectionStrategy}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >

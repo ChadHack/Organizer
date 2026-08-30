@@ -305,14 +305,14 @@ function TableData({
                 disabled={exporting}
                 onClick={() => handleExport("excel")}
               >
-                <FileSpreadsheet className="text-foreground" />
+                <FileSpreadsheet className="text-green-400" />
                 <span>Excel (.xlsx)</span>
               </DropdownMenuItem>
               <DropdownMenuItem
                 disabled={exporting}
                 onClick={() => handleExport("pdf")}
               >
-                <FileText className="text-foreground" />
+                <FileText className="text-red-400" />
                 <span>PDF (.pdf)</span>
               </DropdownMenuItem>
             </DropdownMenuContent>

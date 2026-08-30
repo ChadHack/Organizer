@@ -1,6 +1,5 @@
 "use client"
 
-import * as React from "react"
 import { format, isSameMonth } from "date-fns"
 import { fr } from "date-fns/locale"
 import {
@@ -11,6 +10,7 @@ import {
   ChevronRight,
   Clock3,
 } from "lucide-react"
+import * as React from "react"
 
 import { cn } from "@/lib/utils"
 import { PILL_FILL, type CalendarView } from "./calendar-constants"
@@ -33,7 +33,8 @@ const VIEWS: {
 function useTitle() {
   const { view, cursor } = useCalendar()
   return React.useMemo(() => {
-    if (view === "day") return format(cursor, "EEEE d MMMM yyyy", { locale: fr })
+    if (view === "day")
+      return format(cursor, "EEEE d MMMM yyyy", { locale: fr })
     if (view === "week") {
       const days = weekDays(cursor)
       const [a, b] = [days[0], days[6]]
@@ -85,7 +86,7 @@ export function CalendarToolbar() {
           {/* La clé rejoue l'animation à chaque changement de période. */}
           <h2
             key={tick}
-            className="animate-in fade-in slide-in-from-bottom-1 truncate font-heading text-xl capitalize text-neutral-100 duration-300 ease-out"
+            className="animate-in truncate font-heading text-xl text-neutral-100 capitalize duration-300 ease-out fade-in slide-in-from-bottom-1"
           >
             {title}
           </h2>
@@ -133,7 +134,7 @@ export function CalendarToolbar() {
                   isActive ? "scale-110" : "text-current"
                 )}
               />
-              {label}
+              <span className="hidden md:block">{label}</span>
             </button>
           )
         })}

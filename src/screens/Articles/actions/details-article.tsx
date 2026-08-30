@@ -1,4 +1,5 @@
 import { useArticleStore } from "@/api/stores/article.store"
+import { AspectRatio } from "@/components/ui/aspect-ratio"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -16,6 +17,8 @@ import { format } from "date-fns"
 import { fr } from "date-fns/locale"
 import {
   ArrowLeft,
+  CalendarDays,
+  Crosshair,
   Edit,
   ExternalLink,
   Flag,
@@ -30,6 +33,7 @@ import { useNavigate, useParams } from "react-router-dom"
 import { getArticleActionGroups } from "../article-actions"
 import { ARTICLE_STATUS_CONFIG } from "../article-status"
 import UpdateArticle from "./update-article"
+import { UpdatePriority } from "./update-priority"
 
 function DetailsSkeleton() {
   return (
@@ -53,6 +57,7 @@ const ArticleDetails = () => {
   const navigate = useNavigate()
   const { articles, loading, fetchArticles } = useArticleStore()
   const [showUpdateDialog, setShowUpdateDialog] = useState(false)
+  const [showPriorityDialog, setShowPriorityDialog] = useState(false)
 
   useEffect(() => {
     if (articles.length === 0) fetchArticles()
@@ -113,15 +118,19 @@ const ArticleDetails = () => {
         <div className="flex items-center gap-2.5">
           <Button variant="outline" onClick={() => setShowUpdateDialog(true)}>
             <Edit className="size-4" />
-            Modifier
+            <span className="hidden md:flex">Modifier</span>
+          </Button>
+          <Button variant="outline" onClick={() => setShowPriorityDialog(true)}>
+            <Crosshair className="size-4" />
+            <span className="hidden md:flex">Ordre de priorité</span>
           </Button>
           {deleteAction && (
             <Button
-              className="bg-accent-800 text-neutral-100 hover:bg-accent-900"
+              className="bg-red-800 text-neutral-100 hover:bg-red-900"
               onClick={() => deleteAction.onSelect?.()}
             >
               <Trash className="size-4" />
-              Supprimer
+              <span className="hidden md:flex">Supprimer</span>
             </Button>
           )}
         </div>
@@ -129,7 +138,8 @@ const ArticleDetails = () => {
 
       <div className="grid gap-4.5 lg:grid-cols-[minmax(0,1fr)_21.25rem]">
         <Card className="gap-0 overflow-hidden p-0">
-          <div className="relative h-64 w-full overflow-hidden bg-surface sm:h-80">
+          {/* <div className="relative h-64 w-full overflow-hidden bg-surface sm:h-80"> */}
+          <AspectRatio ratio={21 / 9}>
             {article.image ? (
               <img
                 src={article.image}
@@ -158,7 +168,8 @@ const ArticleDetails = () => {
               <ArrowLeft className="size-4" />
               Retour aux articles
             </Button>
-          </div>
+            {/* </div> */}
+          </AspectRatio>
 
           <CardContent className="flex flex-col gap-4 p-6.5">
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -208,7 +219,8 @@ const ArticleDetails = () => {
                 <span className="text-xs text-muted-foreground">
                   Date estimée
                 </span>
-                <span className="text-sm font-medium text-foreground">
+                <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+                  <CalendarDays className="size-3.5 text-muted-foreground" />
                   {format(article.estimateDate, "d MMMM yyyy", { locale: fr })}
                 </span>
               </div>
@@ -313,6 +325,11 @@ const ArticleDetails = () => {
         article={article}
         open={showUpdateDialog}
         setOpen={setShowUpdateDialog}
+      />
+      <UpdatePriority
+        article={article}
+        open={showPriorityDialog}
+        setOpen={setShowPriorityDialog}
       />
     </motion.div>
   )

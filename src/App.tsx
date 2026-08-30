@@ -1,6 +1,6 @@
 import { lazy, Suspense } from "react"
 import { Route, Routes } from "react-router-dom"
-import AppLayout from "./App-layout"
+import {AppLayout} from "./layouts/App-layout"
 import { RippleSpinner } from "./components/shadcn-space/radix/spinner/spinner-09"
 import { Toaster } from "./components/ui/sonner"
 
@@ -37,7 +37,7 @@ export function App() {
             <Route path="/articles" element={<Articles />} />
             <Route path="/articles/:id" element={<ArticleDetails />} />
             <Route path="/mise_en_oeuvre" element={<Monitoring />} />
-            <Route path="/plannification" element={<Calendar />} />
+            <Route path="/planification" element={<Calendar />} />
           </Route>
         </Routes>
       </Suspense>

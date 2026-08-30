@@ -2,6 +2,7 @@ import type { Article } from "@/api/interfaces/article.interface"
 import { useActionStore } from "@/api/stores/action.store"
 import { useArticleStore } from "@/api/stores/article.store"
 import { PageHeader } from "@/components/page-header"
+import Chart02 from "@/components/shadcn-space/radix/blocks/chart-02/chart"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { cn, fmtPrice } from "@/lib/utils"
@@ -77,7 +78,8 @@ const Dashboard = () => {
       />
 
       <div className="grid grid-cols-1 gap-4.5 xl:grid-cols-[minmax(0,1.5fr)_minmax(290px,1fr)]">
-        <Card className="relative min-h-90 overflow-hidden bg-surface p-6.5">
+        <Chart02 articles={articles} className="block md:hidden" />
+        <Card className="relative hidden min-h-90 overflow-hidden bg-surface p-6.5 md:block">
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="font-heading text-[22px] leading-tight">
@@ -98,6 +100,7 @@ const Dashboard = () => {
             <div className="absolute top-2 right-0 size-46.5 rounded-full bg-accent-300 opacity-95 blur-md" />
             <div className="absolute right-35 bottom-0 size-31.5 rounded-full bg-primary opacity-85 blur-md" />
             <div className="absolute top-0.5 right-47.5 size-24.5 rounded-full bg-neutral-900 opacity-90" />
+            <div className="absolute bottom-0 left-0 size-18 rounded-full bg-neutral-400 opacity-90" />
             <div className="absolute top-6.5 right-51.5 w-17 text-center text-[13px] leading-tight font-bold text-neutral-100">
               {countByStatus("En attente")}
               <br />
@@ -117,6 +120,13 @@ const Dashboard = () => {
               <br />
               <span className="text-[11px] font-medium opacity-75">
                 bouclés
+              </span>
+            </div>
+            <div className="absolute bottom-3.5 left-2 w-14 text-center text-[13px] leading-tight font-bold text-neutral-900">
+              {countByStatus("Annulé")}
+              <br />
+              <span className="text-[11px] font-medium opacity-75">
+                annulés
               </span>
             </div>
           </div>

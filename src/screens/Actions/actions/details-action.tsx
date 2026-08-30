@@ -72,7 +72,7 @@ export default function DetailsAction({
         <div className="flex flex-col gap-3">
           <p className="text-sm text-muted-foreground">Articles</p>
           {action.articles.length > 0 ? (
-            <div className="grid custom-scrollbar h-96 grid-cols-2 gap-3 overflow-y-auto pr-1">
+            <div className="grid custom-scrollbar h-96 gap-3 overflow-y-auto pr-1 md:grid-cols-2">
               {action.articles.map(({ name, description, image, id }) => (
                 <Link
                   to={"articles/" + id}
@@ -89,10 +89,10 @@ export default function DetailsAction({
                     </Avatar>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm font-medium wrap-break-word whitespace-pre-wrap text-foreground">
                       {name}
                     </p>
-                    <p className="truncate text-sm text-muted-foreground">
+                    <p className="truncate text-sm wrap-break-word whitespace-pre-wrap text-muted-foreground">
                       {description}
                     </p>
                   </div>

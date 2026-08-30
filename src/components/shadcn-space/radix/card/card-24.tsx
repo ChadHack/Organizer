@@ -23,7 +23,7 @@ import { fr } from "date-fns/locale"
 import { ExternalLink, Flag, Layers, Package, Tag } from "lucide-react"
 import { motion, useInView } from "motion/react"
 import { Fragment, useRef, useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 
 export interface ArticleCardProps {
   article: Article
@@ -99,120 +99,122 @@ export const ArticleCard = ({
             transition={{ duration: 0.5, ease: "easeOut" }}
             className="w-full"
           >
-            <Card className="group gap-0 overflow-hidden rounded-2xl border-border p-0">
-              <div className="relative h-40 w-full overflow-hidden bg-muted">
-                {article.image ? (
-                  <img
-                    src={article.image}
-                    alt={article.name}
-                    className="h-full w-full object-cover transition-transform duration-600 ease-out group-hover:scale-108"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center">
-                    <Package className="size-10 text-muted-foreground" />
-                  </div>
-                )}
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.6 }}
-                  animate={isInView ? { opacity: 1, scale: 1 } : {}}
-                  transition={{
-                    type: "spring",
-                    stiffness: 260,
-                    damping: 16,
-                    delay: 0.25,
-                  }}
-                  className="absolute top-3 left-3 flex w-13 flex-col items-center overflow-hidden rounded-lg bg-card"
-                >
-                  <span className="w-full bg-primary py-0.5 text-center text-[10px] font-semibold tracking-wide text-primary-foreground">
-                    {month}
-                  </span>
-                  <span className="py-1 text-lg leading-none font-bold text-foreground">
-                    {day}
-                  </span>
-                </motion.div>
-              </div>
-
-              <CardContent className="p-5">
-                <motion.div
-                  variants={contentVariants}
-                  initial="hidden"
-                  animate={isInView ? "visible" : "hidden"}
-                  className="flex flex-col gap-4"
-                >
+            <Link to={`/articles/${article.id}`}>
+              <Card className="group gap-0 overflow-hidden rounded-2xl border-border p-0">
+                <div className="relative h-40 w-full overflow-hidden bg-muted">
+                  {article.image ? (
+                    <img
+                      src={article.image}
+                      alt={article.name}
+                      className="h-full w-full object-cover transition-transform duration-600 ease-out group-hover:scale-108"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center">
+                      <Package className="size-10 text-muted-foreground" />
+                    </div>
+                  )}
                   <motion.div
-                    variants={itemVariants}
-                    className="flex flex-col gap-2"
+                    initial={{ opacity: 0, scale: 0.6 }}
+                    animate={isInView ? { opacity: 1, scale: 1 } : {}}
+                    transition={{
+                      type: "spring",
+                      stiffness: 260,
+                      damping: 16,
+                      delay: 0.25,
+                    }}
+                    className="absolute top-3 left-3 flex w-13 flex-col items-center overflow-hidden rounded-lg bg-card"
                   >
-                    <Badge
-                      className={cn(
-                        "w-fit rounded-full",
-                        ARTICLE_STATUS_CONFIG[article.status].badgeClassName
-                      )}
+                    <span className="w-full bg-primary py-0.5 text-center text-[10px] font-semibold tracking-wide text-primary-foreground">
+                      {month}
+                    </span>
+                    <span className="py-1 text-lg leading-none font-bold text-foreground">
+                      {day}
+                    </span>
+                  </motion.div>
+                </div>
+
+                <CardContent className="p-5">
+                  <motion.div
+                    variants={contentVariants}
+                    initial="hidden"
+                    animate={isInView ? "visible" : "hidden"}
+                    className="flex flex-col gap-4"
+                  >
+                    <motion.div
+                      variants={itemVariants}
+                      className="flex flex-col gap-2"
                     >
-                      {article.status}
-                    </Badge>
-                    <p className="text-base font-semibold text-foreground">
-                      {article.name}
-                    </p>
-                    <p className="line-clamp-2 text-sm text-muted-foreground">
-                      {article.description}
-                    </p>
-                  </motion.div>
+                      <Badge
+                        className={cn(
+                          "w-fit rounded-full",
+                          ARTICLE_STATUS_CONFIG[article.status].badgeClassName
+                        )}
+                      >
+                        {article.status}
+                      </Badge>
+                      <p className="text-base font-semibold text-foreground">
+                        {article.name}
+                      </p>
+                      <p className="line-clamp-2 text-sm text-muted-foreground">
+                        {article.description}
+                      </p>
+                    </motion.div>
 
-                  <motion.div
-                    variants={itemVariants}
-                    className="flex flex-col gap-1.5"
-                  >
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Tag className="size-4 shrink-0" />
-                      <span>
-                        {article.price !== undefined
-                          ? fmtPrice(article.price)
-                          : "Prix non défini"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Package className="size-4 shrink-0" />
-                      <span className="line-clamp-1">
-                        {article.quantity} unité
-                        {article.quantity > 1 ? "s" : ""}
-                      </span>
-                    </div>
-                  </motion.div>
+                    <motion.div
+                      variants={itemVariants}
+                      className="flex flex-col gap-1.5"
+                    >
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Tag className="size-4 shrink-0" />
+                        <span>
+                          {article.price !== undefined
+                            ? fmtPrice(article.price)
+                            : "Prix non défini"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Package className="size-4 shrink-0" />
+                        <span className="line-clamp-1">
+                          {article.quantity} unité
+                          {article.quantity > 1 ? "s" : ""}
+                        </span>
+                      </div>
+                    </motion.div>
 
-                  <MotionSeparator variants={itemVariants} />
+                    <MotionSeparator variants={itemVariants} />
 
-                  <motion.div
-                    variants={itemVariants}
-                    className="flex items-center justify-between gap-2"
-                  >
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-                      <span className="inline-flex items-center gap-1">
-                        <Flag className="size-3.5 shrink-0" />
-                        Priorité {article.priority.priority}
-                      </span>
-                      {article.action && (
-                        <>
-                          <span aria-hidden>·</span>
-                          <span className="inline-flex items-center gap-1 truncate">
-                            <Layers className="size-3.5 shrink-0" />
-                            {article.action.name}
-                          </span>
-                        </>
+                    <motion.div
+                      variants={itemVariants}
+                      className="flex items-center justify-between gap-2"
+                    >
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                        <span className="inline-flex items-center gap-1">
+                          <Flag className="size-3.5 shrink-0" />
+                          Priorité {article.priority.priority}
+                        </span>
+                        {article.action && (
+                          <>
+                            <span aria-hidden>·</span>
+                            <span className="inline-flex items-center gap-1 truncate">
+                              <Layers className="size-3.5 shrink-0" />
+                              {article.action.name}
+                            </span>
+                          </>
+                        )}
+                      </div>
+
+                      {article.link ? (
+                        <a href={article.link} target="_blank" rel="noreferrer">
+                          {cta}
+                        </a>
+                      ) : (
+                        cta
                       )}
-                    </div>
-
-                    {article.link ? (
-                      <a href={article.link} target="_blank" rel="noreferrer">
-                        {cta}
-                      </a>
-                    ) : (
-                      cta
-                    )}
+                    </motion.div>
                   </motion.div>
-                </motion.div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </Link>
           </motion.div>
         </ContextMenuTrigger>
         <ContextMenuContent>
