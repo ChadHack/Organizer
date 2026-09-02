@@ -51,7 +51,15 @@ interface ScreenInfo {
   purpose?: string
 }
 
+interface AppOverview {
+  name: string
+  tagline: string
+  description: string
+  primary_entities: string[]
+}
+
 interface KnowledgeBase {
+  app_overview: AppOverview
   navigation_menu: { items: NavItem[]; admin_only_item: NavItem }
   workflows: Workflow[]
   faq: FaqEntry[]
@@ -72,6 +80,7 @@ const STOPWORDS = new Set([
   "avoir", "ete", "etre", "dans", "sur", "pour", "par", "avec", "sans",
   "plus", "moins", "tres", "bien", "fait", "faire", "peut", "peux", "pouvez",
   "veux", "veut", "voudrais", "aimerais", "svp", "merci", "bonjour", "salut",
+  "dois", "doit", "devais", "devait", "devez", "devrait", "devrais", "faut",
   "a", "l", "d", "j", "y", "en", "c", "s", "n", "m",
 ])
 
@@ -92,6 +101,14 @@ const SYNONYMS: Record<string, string> = {
   produit: "article",
   projet: "action",
   regroupement: "action",
+  // Conjugaisons de "servir" ramenées à "sert" (pas de vrai stemming des
+  // verbes ici) pour que "à quoi ça servait" / "comment m'en servir"
+  // retrouvent la présentation générale de l'application.
+  sert: "sert",
+  sers: "sert",
+  servait: "sert",
+  servir: "sert",
+  servent: "sert",
 }
 
 function canonicalize(word: string) {
@@ -130,6 +147,16 @@ interface IndexEntry {
 
 function buildEntries(): IndexEntry[] {
   const entries: IndexEntry[] = []
+
+  const overview = data.app_overview
+  const overviewAnswer = `${overview.tagline} ${overview.description}`
+  entries.push({
+    tokens: tokenize(
+      `application organizer objectif but sert usage utiliser utilisation fonctionne fonctionnement marche ${overviewAnswer}`
+    ),
+    raw: normalize(overviewAnswer),
+    answer: overviewAnswer,
+  })
 
   for (const { question, answer } of data.faq) {
     entries.push({ tokens: tokenize(question), raw: normalize(question), answer })

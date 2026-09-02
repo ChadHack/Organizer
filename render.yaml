@@ -4,6 +4,13 @@ services:
     runtime: static
     buildCommand: pnpm build
     staticPublishPath: ./dist
+    routes:
+      # SPA : react-router gère le routage côté client, donc toute URL
+      # (ex. /dashboard) doit servir index.html plutôt qu'un fichier
+      # physique qui n'existe pas sur le serveur statique.
+      - type: rewrite
+        source: /*
+        destination: /index.html
     envVars:
       - key: VITE_SUPABASE_URL
         sync: false

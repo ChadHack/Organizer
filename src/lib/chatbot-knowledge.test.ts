@@ -9,6 +9,18 @@ describe("answerQuestion", () => {
     expect(quickReplies?.[0].route).toBe("/articles")
   })
 
+  it("answers general questions about the app's purpose", () => {
+    const { text, matched } = answerQuestion("à quoi sert cette application ?")
+    expect(matched).toBe(true)
+    expect(text.toLowerCase()).toContain("achats")
+  })
+
+  it("answers general questions about how the app works", () => {
+    const { text, matched } = answerQuestion("comment fonctionne l'application ?")
+    expect(matched).toBe(true)
+    expect(text.toLowerCase()).toContain("action")
+  })
+
   it("finds the workflow answer for changing an article's status", () => {
     const { text, matched } = answerQuestion("comment changer le statut d'un article")
     expect(matched).toBe(true)
