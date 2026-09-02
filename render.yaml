@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: organizer-frontend
+    name: Organizer
     runtime: static
     buildCommand: corepack enable && pnpm install && pnpm build
     staticPublishPath: ./dist
