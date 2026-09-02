@@ -30,7 +30,7 @@ export function UsersCell({ user }: { user: User }) {
           label: user.status ? "Désactiver" : "Activer",
           icon: user.status ? Ban : CheckCircle,
           onSelect: () => setShowStatusDialog(true),
-        },
+        }, 
       ],
     },
     {

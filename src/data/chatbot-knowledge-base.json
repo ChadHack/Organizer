@@ -1,0 +1,449 @@
+{
+  "meta": {
+    "purpose": "Base de connaissances structurée pour un chatbot local intégré à l'application Organizer. Contient le fonctionnement, la navigation, le modèle de données, les règles métier et des réponses toutes prêtes aux questions fréquentes des utilisateurs.",
+    "generated": "2026-09-02",
+    "language": "fr",
+    "how_to_use": "Chaque section peut être indexée séparément (RAG) ou concaténée comme contexte système. Le tableau 'faq' contient des paires question/réponse directement exploitables. Les champs 'route' donnent le chemin exact de navigation (React Router) pour chaque écran."
+  },
+
+  "app_overview": {
+    "name": "Organizer",
+    "tagline": "Planifiez et suivez vos achats.",
+    "description": "Application interne (réservée aux comptes de l'organisation) de gestion des achats. Les utilisateurs créent des « articles » (les achats à faire : nom, prix, quantité, date estimée, priorité), les regroupent optionnellement sous des « actions » (des projets/regroupements d'achats dont le coût et le statut sont calculés automatiquement), suivent leur avancement sur un tableau Kanban, les visualisent sur un calendrier/planning, et peuvent exporter la liste en Excel ou PDF.",
+    "primary_entities": ["Article (achat)", "Action (projet/regroupement)", "Priorité (1 à 5)", "Utilisateur"],
+    "currency": "Franc CFA (Fcfa) — formaté via toLocaleString('fr-FR') + ' Fcfa'",
+    "ui_language": "Toute l'interface est en français."
+  },
+
+  "tech_stack": {
+    "frontend": "React 19 + TypeScript + Vite, routage via react-router-dom (v7)",
+    "state_management": "Zustand (un store par entité : auth.store, article.store, action.store, priority.store, user.store)",
+    "backend": "PocketBase (base de données + auth + fichiers + temps réel), accessible via src/lib/pocketbase.ts (URL configurable par VITE_POCKETBASE_URL, défaut http://127.0.0.1:8090)",
+    "backend_logic": "Hooks serveur PocketBase (JSVM) dans pb_hooks/main.pb.js + pb_hooks/lib/article-action-sync.cjs — recalculent automatiquement le coût et le statut d'une action après toute création/modification/suppression d'un de ses articles.",
+    "ui_kit": "Tailwind CSS v4 + composants Radix/shadcn (src/components/ui), animations avec 'motion' (Framer Motion), notifications via 'sonner' (toasts)",
+    "forms": "react-hook-form + validation zod",
+    "tables": "TanStack React Table (tri, filtres, pagination, visibilité des colonnes, persistées en localStorage par tableau)",
+    "kanban": "@dnd-kit (glisser-déposer)",
+    "export": "exceljs (Excel) et jspdf/jspdf-autotable (PDF), chargés à la demande (lazy) uniquement au clic sur « Extraire »",
+    "auth_method": "OAuth2 uniquement (Google et GitHub) via PocketBase — pas de login par mot de passe, pas d'inscription libre."
+  },
+
+  "authentication": {
+    "route": "/",
+    "screen_name": "Authentification",
+    "how_to_login": "Cliquer sur « Continuer avec Google » ou « Continuer avec GitHub » sur l'écran d'accueil. L'accès est réservé aux comptes de l'organisation (mention « accès équipe » sur l'écran de connexion).",
+    "first_login_behavior": "Au tout premier login OAuth d'un compte, PocketBase provisionne automatiquement un enregistrement utilisateur (authWithOAuth2). Il n'y a pas de formulaire d'inscription manuel — le texte « Demander un compte » sur l'écran de login n'est pas un lien fonctionnel, c'est juste une indication.",
+    "disabled_account": "Si le compte a le champ 'status' à false (désactivé par un administrateur), la tentative de connexion échoue avec le message « Votre compte a été désactivé. Contactez un administrateur. » et la session n'est pas ouverte.",
+    "live_disable_while_connected": "Si un administrateur désactive un compte pendant qu'il est déjà connecté (session ouverte), l'app le détecte en temps réel (abonnement PocketBase realtime sur son propre enregistrement 'users'). Une boîte de dialogue « Compte désactivé » apparaît, non fermable, et l'utilisateur est déconnecté automatiquement après 4 secondes.",
+    "logout": "Cliquer sur le bouton rouge (icône déconnexion) en bas du rail de navigation. Une confirmation apparaît (toast « Voulez-vous vraiment vous déconnecter ? » avec boutons Oui/Annulée).",
+    "redirect_after_login": "Redirige vers /dashboard, ou vers la page initialement demandée si l'utilisateur avait été redirigé vers le login depuis une route protégée."
+  },
+
+  "roles_and_permissions": {
+    "member": {
+      "label": "Membre",
+      "access": "Toutes les routes sauf /utilisateurs. Peut créer/modifier/supprimer ses propres actions et articles (et voir ceux des autres utilisateurs, car les collections sont partagées entre comptes authentifiés)."
+    },
+    "admin": {
+      "label": "Administrateur",
+      "flag": "user.isAdmin === true",
+      "access": "Tout ce qu'un membre peut faire, plus l'accès à l'écran « Utilisateurs » (/utilisateurs) pour activer/désactiver ou supprimer des comptes. Un utilisateur admin est repéré par une étoile jaune à côté de son nom dans le tableau des utilisateurs.",
+      "route_guard": "Le composant RequireAdmin protège la route /utilisateurs ; un non-admin qui tente d'y accéder est redirigé vers /dashboard. Le lien de navigation vers /utilisateurs n'est même pas affiché aux non-admins dans le rail de navigation.",
+      "restrictions": "Un admin ne peut pas modifier son propre profil ni celui des autres directement (le profil utilisateur est en lecture seule) ; il peut seulement changer le statut (Actif/Inactif) ou supprimer un compte."
+    },
+    "notes": "Toutes les collections métier (actions, articles, priorities) exigent un compte authentifié pour lister/lire/créer/modifier/supprimer (aucun accès public/anonyme)."
+  },
+
+  "navigation_menu": {
+    "layout": "Rail de navigation vertical à gauche (icônes rondes) sur desktop ; sur mobile, un bouton hamburger en haut à gauche ouvre le même menu dans un tiroir (Sheet) latéral.",
+    "items": [
+      { "label": "Tableau de bord", "route": "/dashboard", "icon": "LayoutDashboard", "description": "Vue d'ensemble : répartition des articles par statut, top 5 des articles prioritaires, coût total planifié, budget engagé, avancement par action." },
+      { "label": "Liste des actions", "route": "/actions", "icon": "Package", "description": "Tableau de toutes les actions (regroupements d'articles) avec compteurs par statut, création, modification, annulation/reprise, suppression." },
+      { "label": "Liste des articles", "route": "/articles", "icon": "ShoppingCart", "description": "Liste (tableau ou cartes) de tous les articles/achats. Création, modification, duplication, changement rapide de priorité, suppression, export Excel/PDF." },
+      { "label": "Suivi de mise en œuvre", "route": "/mise_en_oeuvre", "icon": "Workflow", "description": "Tableau Kanban : faites glisser un article d'une colonne de statut à l'autre pour faire progresser son avancement." },
+      { "label": "Planification", "route": "/planification", "icon": "CalendarDays", "description": "Calendrier (Mois / Semaine / Jour / Gantt) affichant les articles à leur date estimée d'achat." }
+    ],
+    "admin_only_item": { "label": "Paramètres (Utilisateurs)", "route": "/utilisateurs", "icon": "Users2", "description": "Icône visible uniquement pour les administrateurs, sous la cloche de notification, dans le rail de navigation." },
+    "other_rail_elements": [
+      "Logo + nom « Organizer » en haut du rail.",
+      "Cloche de notifications (icône Bell) : présente visuellement mais non fonctionnelle actuellement (aucune liste de notifications n'y est reliée).",
+      "Avatar de l'utilisateur en bas du rail : cliquer dessus ouvre la fiche profil (lecture seule) de l'utilisateur connecté.",
+      "Bouton de déconnexion (icône rouge) juste au-dessus de l'avatar."
+    ],
+    "assistant_bubble": "Une bulle « robot » (image en bas à droite de chaque écran, visible sur desktop) affiche au survol un texte de présentation d'un « assistant virtuel » — c'est l'emplacement prévu pour le chatbot que cette base de connaissances alimente."
+  },
+
+  "data_model": {
+    "Article": {
+      "description": "Représente un achat/produit à suivre. C'est l'entité centrale de l'application.",
+      "fields": {
+        "name": "Nom de l'article (obligatoire à la création, min. 4 caractères)",
+        "description": "Description libre (optionnelle)",
+        "quantity": "Quantité (nombre entier ≥ 1, obligatoire)",
+        "price": "Prix unitaire (optionnel — un article sans prix compte pour 0 Fcfa dans les totaux)",
+        "estimateDate": "Date estimée de l'achat (obligatoire) — c'est la date utilisée dans le calendrier de Planification",
+        "status": "'En attente' | 'En cours' | 'Bouclé' | 'Annulé'",
+        "priority": "Relation vers une Priorité (niveau numérique 1 à 5, 1 = la plus importante). Obligatoire à la création.",
+        "action": "Relation optionnelle vers une Action (le regroupement/projet auquel l'article appartient). Un article peut n'être rattaché à aucune action.",
+        "image": "Fichier image téléversé (optionnel)",
+        "imageUrl": "Alternative : URL externe d'une image (optionnel, mutuellement exclusif avec 'image' dans l'UI — l'utilisateur choisit un onglet Téléverser ou Lien)",
+        "link": "Lien externe vers le produit (optionnel, doit être une URL valide)",
+        "user": "Propriétaire de l'article (rempli automatiquement avec l'utilisateur connecté à la création)"
+      },
+      "status_meaning": {
+        "En attente": "Achat pas encore commencé (statut par défaut à la création)",
+        "En cours": "Achat en cours de traitement",
+        "Bouclé": "Achat finalisé/terminé",
+        "Annulé": "Achat annulé (exclu des totaux de coût et de l'avancement)"
+      }
+    },
+    "Action": {
+      "description": "Regroupe plusieurs articles sous un même objectif/projet (ex. « Réaménagement bureau », « Rentrée scolaire »). Son coût et — en grande partie — son statut sont calculés automatiquement à partir de ses articles, pas saisis manuellement.",
+      "fields": {
+        "name": "Nom de l'action (obligatoire, min. 4 caractères)",
+        "description": "Description libre",
+        "status": "'En attente' | 'En cours' | 'Terminée' | 'Annulée' — calculé automatiquement (voir business_rules), sauf 'Annulée' qui est posée manuellement",
+        "cost": "Somme des prix de tous les articles rattachés dont le statut n'est PAS 'Annulé' — champ en lecture seule, recalculé côté serveur",
+        "articles": "Liste des articles rattachés (relation inverse)",
+        "user": "Propriétaire (créateur) de l'action"
+      }
+    },
+    "Priority": {
+      "description": "Niveau de priorité numérique (1 à 5, 1 étant le plus prioritaire) attribuable à un article. Utilisé pour trier/filtrer les achats les plus urgents. Il n'existe pas d'écran dédié pour créer/gérer les priorités dans le menu principal — elles sont sélectionnées dans un menu déroulant lors de la création/modification d'un article ou via l'action « Ordre de priorité »."
+    },
+    "User": {
+      "description": "Compte utilisateur de l'application, provisionné via connexion OAuth2 (Google/GitHub).",
+      "fields": {
+        "name": "Nom affiché",
+        "email": "Adresse e-mail (issue du fournisseur OAuth)",
+        "avatar": "Photo de profil (issue du fournisseur OAuth ou fichier PocketBase)",
+        "isAdmin": "Booléen — donne accès à l'écran Utilisateurs",
+        "status": "Booléen — compte Actif (true) ou Inactif/désactivé (false)"
+      }
+    }
+  },
+
+  "business_rules": {
+    "source": "pb_hooks/main.pb.js + pb_hooks/lib/article-action-sync.cjs — exécuté automatiquement côté serveur PocketBase après toute création, modification ou suppression d'un article. Aucune action manuelle de l'utilisateur ne déclenche ce recalcul : il est invisible et instantané.",
+    "rule_1_cost": "Le coût (cost) d'une action = somme des prix ('price') de tous ses articles dont le statut n'est PAS 'Annulé'. Un article sans prix renseigné compte pour 0.",
+    "rule_2_3_4_status": [
+      "Si le statut actuel de l'action est déjà 'Annulée', il n'est JAMAIS écrasé automatiquement (une action annulée manuellement le reste tant qu'un humain ne la change pas).",
+      "Si l'action n'a aucun article actif (aucun article, ou tous ses articles sont 'Annulé'), son statut actuel est conservé tel quel (pas de recalcul).",
+      "Si TOUS les articles actifs (non annulés) de l'action sont 'Bouclé' → l'action passe automatiquement à 'Terminée'.",
+      "Sinon, si AU MOINS UN article actif est 'En cours' ou 'Bouclé' → l'action passe automatiquement à 'En cours'.",
+      "Sinon (tous les articles actifs sont encore 'En attente') → l'action reste/repasse à 'En attente'."
+    ],
+    "practical_implication": "Il est inutile d'essayer de changer le statut d'une action manuellement pour refléter son avancement : faites plutôt progresser le statut de ses articles (via le Kanban de la page Suivi de mise en œuvre) et le statut de l'action se met à jour tout seul. Le seul contrôle manuel réel sur le statut d'une action est le bouton 'Annulé' / 'Reprendre' du menu contextuel."
+  },
+
+  "screens": {
+    "dashboard": {
+      "route": "/dashboard",
+      "title": "Tableau de bord",
+      "purpose": "Vue d'ensemble synthétique de l'état des achats de l'utilisateur connecté.",
+      "widgets": [
+        "Graphique de répartition des articles par statut (En attente / En cours / Bouclé / Annulé), avec un donut animé sur desktop et un graphique alternatif (Chart02) sur mobile.",
+        "Carte « Articles prioritaires » : top 5 des articles triés par niveau de priorité croissant (1 = plus urgent), avec bouton « Voir tous les articles » vers /articles.",
+        "Carte « Coût total planifié » : somme des prix de tous les articles non annulés.",
+        "Carte « Budget engagé » : somme des prix des articles 'En cours' + 'Bouclé', avec barre de progression en % du coût total.",
+        "Carte « Avancement par action » : une barre de progression par action, basée sur le ratio d'articles 'Bouclé' parmi ses articles, avec lien « Tout voir » vers /actions."
+      ],
+      "scope": "Les données affichées sont filtrées sur les actions/articles appartenant à l'utilisateur connecté (fetchArticlesByUser / fetchActionsByUser)."
+    },
+
+    "actions": {
+      "route": "/actions",
+      "title": "Actions",
+      "subtitle": "Regroupements d'articles et suivi de leur coût",
+      "purpose": "Gérer les « actions » (projets/regroupements d'achats).",
+      "how_to_create": "Bouton « Nouvelle action » en haut à droite → dialogue avec 2 champs : Nom (obligatoire, ≥4 caractères) et Description. Le statut est initialisé à 'En attente'.",
+      "cards_summary": "4 cartes de comptage par statut (En attente / En cours / Terminée / Annulée), affichées seulement s'il existe au moins une action.",
+      "table": {
+        "columns": ["sélection", "Nom", "Description", "Progression (X/Y articles bouclés + barre %)", "Coût (calculé)", "Statut (badge)", "menu d'actions"],
+        "search": "Filtrer par nom",
+        "filters": "Filtre par Statut (En attente / En cours / Terminée / Annulée)"
+      },
+      "row_actions": [
+        { "action": "Détails", "effect": "Ouvre une fenêtre listant tous les articles de l'action (image, nom, description) ; cliquer sur un article ouvre sa page de détail." },
+        { "action": "Modifier", "effect": "Ouvre un formulaire pour changer le nom et la description (le statut n'est pas modifiable depuis ce formulaire)." },
+        { "action": "Annulé (si l'action n'est pas déjà annulée)", "effect": "Après confirmation, passe le statut de l'action à 'Annulée'. Ce statut n'est ensuite plus jamais recalculé automatiquement." },
+        { "action": "Reprendre (si l'action est 'Annulée')", "effect": "Après confirmation, repasse le statut de l'action à 'En cours', ce qui la remet dans le circuit du calcul automatique de statut." },
+        { "action": "Supprimer", "effect": "Après confirmation, supprime définitivement l'action et toutes ses données (les articles rattachés ne sont pas automatiquement supprimés — l'entité action disparaît)." }
+      ]
+    },
+
+    "articles": {
+      "route": "/articles",
+      "title": "Articles",
+      "subtitle": "Articles priorisés, rattachés à une action",
+      "purpose": "Gérer la liste complète des achats (articles).",
+      "views": {
+        "tabs": ["Liste (tableau, avec export Excel/PDF)", "Carte (grille de cartes visuelles, avec ses propres filtres nom/action/priorité)"]
+      },
+      "how_to_create": "Bouton « Nouvel article » en haut à droite → formulaire en 2 étapes : (1) Informations — Nom (obligatoire), Description, Quantité (obligatoire, ≥1), Prix, Date estimée (obligatoire) ; (2) Détails — Lien (URL optionnelle), Priorité (obligatoire, liste déroulante 1-5), Action liée (optionnelle), Image (onglet « Téléverser un fichier » ou onglet « Lien (URL) »).",
+      "priority_summary_cards": "5 cartes (Priorité 1 à 5) affichant le nombre d'articles et la somme des prix pour chaque niveau.",
+      "table_columns": ["sélection", "Image", "Nom", "Statut (badge)", "Priorité", "Action liée", "Prix", "menu d'actions"],
+      "search_and_filters": "Recherche par nom ; filtres par Action liée et par Priorité (1 à 5).",
+      "export": {
+        "how": "Depuis l'onglet « Liste », bouton « Extraire » (menu déroulant) → choisir « Excel (.xlsx) » ou « PDF (.pdf) ».",
+        "scope": "Exporte exactement les lignes actuellement visibles dans le tableau (après recherche + filtres appliqués), pas forcément tous les articles.",
+        "content": "Nom, description (Excel seulement), statut, priorité, action, quantité, prix, date estimée, lien, avec les images des articles intégrées (proxy CORS wsrv.nl pour les images externes non hébergées par l'app)."
+      },
+      "row_actions": [
+        { "action": "Détails", "effect": "Navigue vers la page de détail complète de l'article (/articles/:id)." },
+        { "action": "Dupliquer", "effect": "Ouvre un formulaire pré-rempli avec les valeurs de l'article existant ; valider crée un NOUVEL article (statut réinitialisé à 'En attente')." },
+        { "action": "Modifier", "effect": "Ouvre le même formulaire en 2 étapes que la création, pré-rempli. ATTENTION : voir la mise en garde ci-dessous (known_quirks)." },
+        { "action": "Ordre de priorité", "effect": "Petit dialogue rapide pour changer uniquement le niveau de priorité (1-5) de l'article, sans passer par le formulaire complet." },
+        { "action": "Supprimer", "effect": "Après confirmation, supprime définitivement l'article." }
+      ]
+    },
+
+    "article_details": {
+      "route": "/articles/:id",
+      "title": "Détail d'un article",
+      "purpose": "Fiche complète d'un article : grande image, badge de statut, bouton « Ouvrir le lien » si un lien est renseigné, quantité, prix, date estimée, priorité, action liée, informations système (créé le / modifié le / identifiant PocketBase).",
+      "header_actions": ["Modifier", "Ordre de priorité", "Dupliquer", "Supprimer"],
+      "access": "Atteint via le clic sur « Détails » depuis la liste des articles, ou directement via l'URL /articles/{id}."
+    },
+
+    "monitoring_kanban": {
+      "route": "/mise_en_oeuvre",
+      "title": "Suivi de mise en œuvre",
+      "subtitle": "Glissez un article d'une colonne à l'autre",
+      "purpose": "Tableau Kanban montrant TOUS les articles de l'utilisateur, répartis en 4 colonnes correspondant à leur statut : En attente, En cours, Bouclé, Annulé.",
+      "how_to_use": "C'est la manière prévue pour faire progresser le statut d'un article au quotidien : glisser-déposer (drag & drop) la carte de l'article depuis sa colonne actuelle vers la colonne du nouveau statut. Le changement est enregistré immédiatement (aucune confirmation demandée) et déclenche automatiquement le recalcul du coût/statut de l'action parente le cas échéant.",
+      "note": "Chaque carte affiche le nom de l'article ; un aperçu flottant suit le curseur pendant le glissement."
+    },
+
+    "planning_calendar": {
+      "route": "/planification",
+      "title": "Planification",
+      "subtitle": "Dates estimées des achats sur le calendrier",
+      "purpose": "Visualiser les articles sur un calendrier, positionnés à leur date estimée d'achat (estimateDate).",
+      "views": ["Mois", "Semaine", "Jour", "Gantt"],
+      "how_to_switch_view": "Sélecteur d'onglets en haut à droite du calendrier (icônes Mois/Semaine/Jour/Gantt).",
+      "navigation": "Flèches précédent/suivant pour changer de période, bouton « Aujourd'hui » pour revenir à la date du jour.",
+      "color_coding": "Chaque évènement (article) est coloré selon son statut : En attente = neutre/gris, En cours = orange (couleur primaire), Bouclé = vert, Annulé = rose estompé.",
+      "gantt_grouping": "Dans la vue Gantt, les articles sont regroupés par « lane » = nom de leur action liée (ou « Sans action » s'ils n'en ont pas).",
+      "event_click": "Cliquer sur un évènement ouvre un panneau de détail affichant statut, priorité, quantité, action liée et prix."
+    },
+
+    "users_admin": {
+      "route": "/utilisateurs",
+      "title": "Utilisateurs",
+      "subtitle": "Utilisateurs de l'application",
+      "access": "Réservé aux administrateurs (isAdmin = true). Non listé dans le menu et redirection automatique vers /dashboard pour tout autre profil.",
+      "purpose": "Gérer les comptes de tous les utilisateurs de l'application.",
+      "table_columns": ["sélection", "Avatar", "Nom (+ étoile si administrateur)", "Email", "Statut (Actif/Inactif)", "Date d'inscription", "menu d'actions"],
+      "search_and_filters": "Recherche par nom ; filtre par Statut (Actif/Inactif).",
+      "row_actions": [
+        { "action": "Détails", "effect": "Ouvre la fiche profil (lecture seule) de l'utilisateur : avatar, nom, rôle, email, nombre d'actions et d'articles qu'il possède." },
+        { "action": "Activer / Désactiver", "effect": "Bascule le champ status de l'utilisateur. Désactiver un compte déjà connecté déclenche sa déconnexion forcée sous 4 secondes (voir authentication.live_disable_while_connected)." },
+        { "action": "Supprimer", "effect": "Après confirmation, supprime définitivement le compte utilisateur." }
+      ]
+    },
+
+    "user_profile_dialog": {
+      "how_to_open": "Cliquer sur son propre avatar en bas du rail de navigation (n'importe quel écran), ou sur « Détails » depuis la ligne d'un utilisateur dans l'écran Utilisateurs (admin).",
+      "content": "Avatar, nom, rôle (Administrateur/Membre), email, nombre total d'actions possédées, nombre total d'articles possédés.",
+      "editable": "Non — c'est une fiche en lecture seule, il n'existe actuellement aucun moyen dans l'interface de modifier son propre nom/avatar/email."
+    }
+  },
+
+  "shared_ui_patterns": {
+    "data_tables": {
+      "used_on": ["Actions", "Articles (onglet Liste)", "Utilisateurs"],
+      "features": [
+        "Recherche texte sur une colonne clé (nom).",
+        "Filtres par colonne sous forme de menus déroulants « combobox » (ex. statut, priorité, action liée).",
+        "Bouton « Colonnes » : menu à cases à cocher pour afficher/masquer des colonnes.",
+        "Tri sur certaines colonnes (icône flèches, ex. colonne Nom).",
+        "Sélection de lignes via cases à cocher.",
+        "Pagination en bas de tableau (10 lignes par page côté client par défaut).",
+        "Clic droit sur une ligne : ouvre directement son menu d'actions (raccourci équivalent au bouton menu de la ligne).",
+        "Bouton « Réinitialiser » pour effacer tous les filtres actifs d'un coup.",
+        "Les filtres de colonnes et la visibilité des colonnes choisis par l'utilisateur sont mémorisés dans le navigateur (localStorage) par tableau, donc conservés d'une visite à l'autre sur le même appareil."
+      ]
+    },
+    "forms_and_dialogs": "La création/modification se fait via des fenêtres modales (dialogues), jamais des pages séparées (sauf le détail d'article qui a sa propre page). Les champs obligatoires sont marqués d'un astérisque rouge « * ». Une notification (toast, en haut à droite) confirme le succès ou signale l'échec de chaque action.",
+    "destructive_actions_confirmation": "Toute suppression ou changement d'état sensible (supprimer, annuler une action, activer/désactiver un utilisateur) affiche d'abord une confirmation (toast avec un bouton d'action et un bouton d'annulation) avant d'être exécuté.",
+    "loading_states": "Pendant le chargement des données, les tableaux affichent un squelette de chargement (« skeleton ») plutôt qu'un simple spinner."
+  },
+
+  "workflows": [
+    {
+      "goal": "Se connecter à l'application",
+      "steps": [
+        "Ouvrir l'application (redirige vers l'écran de connexion si non connecté).",
+        "Cliquer sur « Continuer avec Google » ou « Continuer avec GitHub ».",
+        "Suivre le flux OAuth du fournisseur choisi.",
+        "Retour automatique sur le Tableau de bord (ou la page initialement demandée)."
+      ]
+    },
+    {
+      "goal": "Ajouter un nouvel achat (article)",
+      "steps": [
+        "Aller dans « Liste des articles » (/articles).",
+        "Cliquer sur « Nouvel article ».",
+        "Étape 1 : renseigner Nom, Description, Quantité, Prix, Date estimée.",
+        "Cliquer sur « Suivant ».",
+        "Étape 2 : renseigner Lien (optionnel), choisir la Priorité (obligatoire), l'Action liée (optionnelle), et ajouter une image (téléversement ou lien URL, optionnel).",
+        "Cliquer sur « Ajouter »."
+      ]
+    },
+    {
+      "goal": "Créer un regroupement d'achats (action/projet)",
+      "steps": [
+        "Aller dans « Liste des actions » (/actions).",
+        "Cliquer sur « Nouvelle action ».",
+        "Renseigner Nom (obligatoire) et Description.",
+        "Cliquer sur « Ajouter ».",
+        "Pour y rattacher des articles : créer ou modifier un article et choisir cette action dans le champ « Action liée »."
+      ]
+    },
+    {
+      "goal": "Faire avancer le statut d'un achat (par ex. de « En attente » à « En cours »)",
+      "steps": [
+        "Aller dans « Suivi de mise en œuvre » (/mise_en_oeuvre).",
+        "Repérer la carte de l'article dans sa colonne actuelle.",
+        "La glisser-déposer dans la colonne du nouveau statut souhaité.",
+        "Le changement est enregistré immédiatement."
+      ],
+      "alternative": "Pour un article ponctuel, ouvrir sa fiche de détail (/articles/:id) ne permet PAS de changer le statut directement (le formulaire « Modifier » ne propose pas de champ statut modifiable et le réinitialise même à « En attente », voir known_quirks). Le Kanban reste la seule méthode fiable pour changer un statut."
+    },
+    {
+      "goal": "Voir combien coûte un projet (action) et où j'en suis",
+      "steps": [
+        "Aller dans « Liste des actions » (/actions).",
+        "La colonne « Coût » affiche le total (calculé automatiquement, somme des prix des articles non annulés).",
+        "La colonne « Progression » affiche le ratio d'articles bouclés et une barre de progression.",
+        "Cliquer sur « Détails » (menu de la ligne) pour voir la liste des articles qui composent ce coût."
+      ]
+    },
+    {
+      "goal": "Exporter la liste des articles en Excel ou PDF",
+      "steps": [
+        "Aller dans « Liste des articles » (/articles), rester sur l'onglet « Liste ».",
+        "(Optionnel) Appliquer une recherche/des filtres pour restreindre les lignes à exporter.",
+        "Cliquer sur le bouton « Extraire » en haut du tableau.",
+        "Choisir « Excel (.xlsx) » ou « PDF (.pdf) » dans le menu déroulant.",
+        "Le fichier se télécharge automatiquement (nom : articles-AAAA-MM-JJ.xlsx ou .pdf)."
+      ]
+    },
+    {
+      "goal": "Changer uniquement la priorité d'un article",
+      "steps": [
+        "Depuis la liste des articles ou sa page de détail, ouvrir le menu de la ligne (ou les boutons d'en-tête sur la fiche détail).",
+        "Cliquer sur « Ordre de priorité ».",
+        "Choisir le nouveau niveau (1 à 5) dans la liste déroulante.",
+        "Cliquer sur « Mettre à jour »."
+      ]
+    },
+    {
+      "goal": "Dupliquer un article existant",
+      "steps": [
+        "Ouvrir le menu de la ligne de l'article (ou les boutons d'en-tête sur sa fiche détail).",
+        "Cliquer sur « Dupliquer ».",
+        "Le formulaire s'ouvre pré-rempli avec les valeurs de l'article d'origine — ajuster si besoin.",
+        "Valider : un NOUVEL article est créé (statut réinitialisé à « En attente »), l'original n'est pas modifié."
+      ]
+    },
+    {
+      "goal": "Annuler puis reprendre une action",
+      "steps": [
+        "Dans « Liste des actions », ouvrir le menu de la ligne de l'action.",
+        "Cliquer sur « Annulé » et confirmer — l'action passe en statut « Annulée » et n'est plus recalculée automatiquement.",
+        "Pour la reprendre plus tard : rouvrir le menu de la ligne, cliquer sur « Reprendre » et confirmer — elle repasse à « En cours »."
+      ]
+    },
+    {
+      "goal": "Activer/désactiver ou supprimer un compte utilisateur (administrateur uniquement)",
+      "steps": [
+        "Se connecter avec un compte administrateur.",
+        "Cliquer sur l'icône « Utilisateurs » (Users2) dans le rail de navigation, ou aller sur /utilisateurs.",
+        "Repérer l'utilisateur dans le tableau, ouvrir le menu de sa ligne.",
+        "Choisir « Activer »/« Désactiver » (avec confirmation) ou « Supprimer » (avec confirmation)."
+      ]
+    },
+    {
+      "goal": "Voir mes achats sur un calendrier / planifier dans le temps",
+      "steps": [
+        "Aller dans « Planification » (/planification).",
+        "Choisir la vue Mois, Semaine, Jour ou Gantt en haut à droite.",
+        "Naviguer avec les flèches précédent/suivant ou revenir à « Aujourd'hui ».",
+        "Cliquer sur un article dans le calendrier pour voir ses détails (statut, priorité, quantité, action, prix)."
+      ]
+    }
+  ],
+
+  "known_quirks_and_caveats": [
+    {
+      "id": "update-article-resets-status",
+      "description": "Le formulaire « Modifier » d'un article (dialog UpdateArticle) envoie toujours status: 'En attente' à la sauvegarde, quel que soit le statut actuel de l'article (le champ n'est pas éditable dans ce formulaire mais est quand même réécrit en dur). Conséquence : modifier les informations (nom, prix, date, etc.) d'un article déjà « En cours » ou « Bouclé » le fait retomber à « En attente ».",
+      "recommendation_for_users": "Pour changer uniquement le statut d'un article, utiliser le tableau Kanban (« Suivi de mise en œuvre »), pas le formulaire « Modifier ». Si vous devez éditer les informations d'un article avancé, vérifiez/remettez son statut ensuite via le Kanban."
+    },
+    {
+      "id": "action-status-not-user-editable-in-form",
+      "description": "Le formulaire « Modifier » d'une action ne propose pas de champ pour changer son statut à la main (seuls Nom et Description sont éditables) ; le statut reste régi par la synchronisation automatique ou par les actions dédiées « Annulé »/« Reprendre »."
+    },
+    {
+      "id": "notifications-bell-inactive",
+      "description": "L'icône de cloche (notifications) dans le rail de navigation n'est reliée à aucune fonctionnalité pour l'instant — elle affiche juste un point rouge décoratif."
+    },
+    {
+      "id": "no-self-profile-edit",
+      "description": "Il n'existe aucun écran permettant à un utilisateur de modifier son propre nom, avatar ou email — ces informations viennent du fournisseur OAuth (Google/GitHub) au moment du premier login."
+    },
+    {
+      "id": "delete-action-does-not-cascade-visibly",
+      "description": "Supprimer une action supprime l'enregistrement de l'action, mais le texte de confirmation ne mentionne pas explicitement le sort de ses articles rattachés — leur champ 'action' redevient simplement vide (ils ne sont pas eux-mêmes supprimés)."
+    }
+  ],
+
+  "faq": [
+    { "question": "Où puis-je ajouter un nouvel achat ?", "answer": "Allez dans le menu « Liste des articles » (/articles) puis cliquez sur le bouton « Nouvel article » en haut à droite." },
+    { "question": "Comment créer une nouvelle action ou un nouveau projet ?", "answer": "Allez dans « Liste des actions » (/actions) et cliquez sur « Nouvelle action ». Renseignez un nom et une description." },
+    { "question": "Comment changer le statut d'un article ?", "answer": "Le moyen prévu est le tableau Kanban dans « Suivi de mise en œuvre » (/mise_en_oeuvre) : glissez-déposez la carte de l'article vers la colonne du nouveau statut. Évitez d'utiliser le formulaire « Modifier », qui réinitialise le statut à « En attente »." },
+    { "question": "Comment voir le coût total d'un projet ?", "answer": "Dans « Liste des actions » (/actions), la colonne « Coût » de chaque ligne affiche automatiquement la somme des prix de ses articles non annulés." },
+    { "question": "Pourquoi le coût d'une action a-t-il changé tout seul ?", "answer": "Le coût et le statut d'une action sont recalculés automatiquement à chaque création, modification ou suppression d'un de ses articles (règle métier côté serveur). Ce n'est pas un champ que l'on saisit à la main." },
+    { "question": "Comment exporter la liste des articles ?", "answer": "Dans « Liste des articles », onglet « Liste », cliquez sur le bouton « Extraire » puis choisissez « Excel (.xlsx) » ou « PDF (.pdf) ». Seules les lignes actuellement affichées (après filtres) sont exportées." },
+    { "question": "Où gérer les utilisateurs de l'application ?", "answer": "Dans l'écran « Utilisateurs » (/utilisateurs), accessible uniquement aux comptes administrateurs via l'icône dédiée dans le rail de navigation." },
+    { "question": "Comment activer ou désactiver un compte ?", "answer": "En tant qu'administrateur, allez dans « Utilisateurs », ouvrez le menu de la ligne de l'utilisateur concerné et choisissez « Activer » ou « Désactiver »." },
+    { "question": "Que se passe-t-il si mon compte est désactivé pendant que je suis connecté ?", "answer": "Une fenêtre « Compte désactivé » apparaît et vous déconnecte automatiquement au bout de 4 secondes." },
+    { "question": "Comment voir tous les articles d'une action précise ?", "answer": "Dans « Liste des actions », ouvrez le menu de la ligne de l'action et cliquez sur « Détails » : la liste de ses articles s'affiche, cliquables pour accéder à leur fiche complète." },
+    { "question": "Comment changer uniquement la priorité d'un article sans tout modifier ?", "answer": "Utilisez l'action « Ordre de priorité » depuis le menu de la ligne de l'article (ou les boutons de sa fiche détail) : un petit formulaire ne demande que le nouveau niveau de priorité." },
+    { "question": "Comment dupliquer un article pour en créer un similaire rapidement ?", "answer": "Utilisez l'action « Dupliquer » depuis le menu de la ligne de l'article : un formulaire pré-rempli avec les mêmes valeurs s'ouvre, à ajuster puis valider pour créer un nouvel article." },
+    { "question": "Où voir mes achats sur un calendrier ?", "answer": "Dans « Planification » (/planification), qui affiche les articles à leur date estimée, avec des vues Mois, Semaine, Jour et Gantt." },
+    { "question": "Comment se connecter à l'application ?", "answer": "Uniquement via un compte Google ou GitHub de l'organisation, boutons présents sur l'écran d'accueil. Il n'y a pas de mot de passe ni d'inscription libre." },
+    { "question": "Comment me déconnecter ?", "answer": "Cliquez sur le bouton rouge de déconnexion en bas du rail de navigation, puis confirmez." },
+    { "question": "Où voir mon profil ?", "answer": "Cliquez sur votre avatar en bas du rail de navigation ; une fiche en lecture seule s'affiche (nom, rôle, email, nombre d'actions et d'articles)." },
+    { "question": "Puis-je modifier mon nom ou mon avatar ?", "answer": "Non, il n'existe pas d'écran d'édition du profil dans l'application actuellement ; ces informations viennent de votre compte Google/GitHub." },
+    { "question": "Comment filtrer les articles par priorité ou par action ?", "answer": "Dans « Liste des articles », utilisez les menus déroulants de filtre au-dessus du tableau (ou de la grille de cartes) : « Actions » et « Priorité »." },
+    { "question": "Comment retrouver un article par son nom ?", "answer": "Utilisez le champ de recherche « Filtrer par nom.. » en haut de la liste des articles (ou des actions/utilisateurs, chaque tableau a sa propre recherche)." },
+    { "question": "Comment ajouter une image à un article ?", "answer": "Dans le formulaire de création/modification d'article, à l'étape 2, choisissez l'onglet « Téléverser un fichier » pour importer une image depuis votre appareil, ou l'onglet « Lien (URL) » pour indiquer une image déjà en ligne." },
+    { "question": "Pourquoi un article n'apparaît-il pas dans une action ?", "answer": "Un article n'est rattaché à une action que si le champ « Action liée » a été renseigné lors de sa création ou modification — ce rattachement est optionnel." },
+    { "question": "Quelles sont les valeurs de priorité possibles ?", "answer": "Les priorités vont de 1 (la plus urgente/importante) à 5 (la moins urgente)." },
+    { "question": "Quels sont les statuts possibles pour un article ?", "answer": "En attente, En cours, Bouclé, Annulé." },
+    { "question": "Quels sont les statuts possibles pour une action ?", "answer": "En attente, En cours, Terminée, Annulée." },
+    { "question": "Comment annuler une action ?", "answer": "Ouvrez le menu de la ligne de l'action dans « Liste des actions » et cliquez sur « Annulé », puis confirmez." },
+    { "question": "Comment reprendre une action annulée ?", "answer": "Ouvrez le menu de sa ligne et cliquez sur « Reprendre » (visible seulement si elle est déjà 'Annulée'), puis confirmez ; elle repasse au statut « En cours »." },
+    { "question": "Comment supprimer un article ou une action ?", "answer": "Ouvrez le menu de la ligne concernée (icône ⋯ ou clic droit sur la ligne du tableau) et cliquez sur « Supprimer », puis confirmez — la suppression est définitive." },
+    { "question": "Comment masquer ou afficher certaines colonnes d'un tableau ?", "answer": "Utilisez le bouton « Colonnes » en haut à droite du tableau : une liste à cases à cocher permet d'afficher/masquer chaque colonne." },
+    { "question": "Est-ce que je peux voir les articles en mode carte plutôt qu'en tableau ?", "answer": "Oui, dans « Liste des articles », basculez sur l'onglet « Carte » à côté de l'onglet « Liste »." },
+    { "question": "Comment voir le budget déjà engagé par rapport au budget total ?", "answer": "Sur le Tableau de bord, la carte « Budget engagé » indique la somme des articles En cours + Bouclé et son pourcentage par rapport au coût total planifié." },
+    { "question": "Quelle devise est utilisée dans l'application ?", "answer": "Le Franc CFA (Fcfa)." },
+    { "question": "Comment ouvrir le lien produit d'un article ?", "answer": "Sur sa fiche de détail, cliquez sur le bouton « Ouvrir le lien » (si un lien a été renseigné), ou depuis le tableau via sa fiche détail." },
+    { "question": "Le clic droit sur une ligne de tableau fait-il quelque chose ?", "answer": "Oui, il ouvre directement le menu d'actions de cette ligne, comme un raccourci au bouton menu." },
+    { "question": "Mes filtres de tableau sont-ils conservés si je quitte la page ?", "answer": "Oui, les filtres de colonnes et la visibilité des colonnes choisis sont mémorisés dans votre navigateur (par tableau) et retrouvés à votre prochaine visite sur le même appareil." }
+  ],
+
+  "glossary": {
+    "Article": "Un achat/produit individuel à suivre (unité de base de l'application).",
+    "Action": "Un regroupement d'articles autour d'un même projet/objectif ; son coût et son statut se calculent automatiquement à partir des articles qui lui sont rattachés.",
+    "Priorité": "Niveau d'urgence numérique (1 à 5) attribué à un article.",
+    "Kanban / Suivi de mise en œuvre": "Le tableau à colonnes (par statut) permettant de faire glisser un article pour changer son avancement.",
+    "Planification": "Le calendrier affichant les articles à leur date estimée.",
+    "Bouclé": "Statut signifiant qu'un article est terminé/finalisé.",
+    "Fcfa": "Franc CFA, la devise utilisée dans toute l'application pour les montants."
+  }
+}

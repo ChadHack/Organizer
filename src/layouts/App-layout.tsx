@@ -1,5 +1,6 @@
 import type { NavGroup } from "@/api/interfaces/navigation.interface"
 import { useAuthStore } from "@/api/stores/auth.store"
+import { ChatWidget } from "@/components/chatbot/ChatWidget"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
@@ -157,6 +158,7 @@ export function AppLayout() {
           <Menu className="size-4.5" strokeWidth={2.75} />
         </button>
         <Outlet />
+        <ChatWidget />
       </main>
     </div>
   )
