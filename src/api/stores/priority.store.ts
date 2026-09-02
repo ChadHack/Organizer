@@ -1,23 +1,28 @@
 import type { Priority } from "@/api/interfaces/priority.interface"
-import { pb } from "@/lib/pocketbase"
-import type { RecordModel } from "pocketbase"
+import { supabase } from "@/lib/supabase"
 import { create } from "zustand"
+import type { ArticleRow } from "./article.store"
 import { mapArticle } from "./article.store"
-import { mapUserOrUnknown } from "./user.store"
 
-const COLLECTION = "priorities"
-const EXPAND = "articles_via_priority.priority,user"
+const TABLE = "priorities"
+// Relation inverse (articles pointant sur cette priorité), chaque article
+// embarquant lui-même sa propre priorité — requise par mapArticle. Une
+// priorité n'a pas de propriétaire (pas de colonne "user").
+const SELECT = "*, articles(*, priorities(*))"
 
-export function mapPriority(record: RecordModel): Priority {
-  const expand = record.expand as
-    { articles_via_priority?: RecordModel[]; user?: RecordModel } | undefined
+export interface PriorityRow {
+  id: string
+  priority: number
+  articles?: ArticleRow[] | null
+  created: string
+  updated: string
+}
 
+export function mapPriority(record: PriorityRow): Priority {
   return {
     id: record.id,
     priority: record.priority,
-    articles: expand?.articles_via_priority?.map(mapArticle) ?? [],
-    userId: record.user ?? "",
-    user: mapUserOrUnknown(expand?.user),
+    articles: record.articles?.map(mapArticle) ?? [],
     created: new Date(record.created),
     updated: new Date(record.updated),
   }
@@ -32,7 +37,6 @@ interface PriorityState {
   loading: boolean
   error: string | null
   fetchPriorities: () => Promise<void>
-  fetchPrioritiesByUser: (userId: string) => Promise<void>
   createPriority: (data: PriorityInput) => Promise<Priority>
   updatePriority: (
     id: string,
@@ -49,43 +53,41 @@ export const usePriorityStore = create<PriorityState>((set, get) => ({
   fetchPriorities: async () => {
     set({ loading: true, error: null })
     try {
-      const records = await pb
-        .collection(COLLECTION)
-        .getFullList({ sort: "priority", expand: EXPAND })
-      set({ priorities: records.map(mapPriority), loading: false })
-    } catch (err) {
-      set({ error: (err as Error).message, loading: false })
-    }
-  },
-
-  fetchPrioritiesByUser: async (userId) => {
-    set({ loading: true, error: null })
-    try {
-      const records = await pb.collection(COLLECTION).getFullList({
-        sort: "priority",
-        expand: EXPAND,
-        filter: pb.filter("user = {:userId}", { userId }),
+      const { data, error } = await supabase
+        .from(TABLE)
+        .select(SELECT)
+        .order("priority", { ascending: true })
+      if (error) throw error
+      set({
+        priorities: (data as unknown as PriorityRow[]).map(mapPriority),
+        loading: false,
       })
-      set({ priorities: records.map(mapPriority), loading: false })
     } catch (err) {
       set({ error: (err as Error).message, loading: false })
     }
   },
 
   createPriority: async (data) => {
-    const record = await pb
-      .collection(COLLECTION)
-      .create({ ...data, user: pb.authStore.record?.id }, { expand: EXPAND })
-    const priority = mapPriority(record)
+    const { data: record, error } = await supabase
+      .from(TABLE)
+      .insert(data)
+      .select(SELECT)
+      .single()
+    if (error) throw error
+    const priority = mapPriority(record as unknown as PriorityRow)
     set({ priorities: [...get().priorities, priority] })
     return priority
   },
 
   updatePriority: async (id, data) => {
-    const record = await pb
-      .collection(COLLECTION)
-      .update(id, data, { expand: EXPAND })
-    const priority = mapPriority(record)
+    const { data: record, error } = await supabase
+      .from(TABLE)
+      .update(data)
+      .eq("id", id)
+      .select(SELECT)
+      .single()
+    if (error) throw error
+    const priority = mapPriority(record as unknown as PriorityRow)
     set({
       priorities: get().priorities.map((p) => (p.id === id ? priority : p)),
     })
@@ -93,7 +95,8 @@ export const usePriorityStore = create<PriorityState>((set, get) => ({
   },
 
   deletePriority: async (id) => {
-    await pb.collection(COLLECTION).delete(id)
+    const { error } = await supabase.from(TABLE).delete().eq("id", id)
+    if (error) throw error
     set({ priorities: get().priorities.filter((p) => p.id !== id) })
   },
 }))

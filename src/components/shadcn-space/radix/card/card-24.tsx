@@ -92,7 +92,7 @@ export const ArticleCard = ({
   )
 
   return (
-    <div className="p-6">
+    <div className="h-full p-6">
       <ContextMenu>
         <ContextMenuTrigger asChild>
           <motion.div
@@ -100,10 +100,10 @@ export const ArticleCard = ({
             initial={{ opacity: 0, y: 16 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.5, ease: "easeOut" }}
-            className="w-full"
+            className="h-full w-full"
           >
-            <Link to={`/articles/${article.id}`}>
-              <Card className="group gap-0 overflow-hidden rounded-2xl border-border p-0">
+            <Link to={`/articles/${article.id}`} className="block h-full">
+              <Card className="group h-full gap-0 overflow-hidden rounded-2xl border-border p-0">
                 <div className="relative h-40 w-full overflow-hidden bg-muted">
                   {article.image ? (
                     <img
@@ -136,12 +136,12 @@ export const ArticleCard = ({
                   </motion.div>
                 </div>
 
-                <CardContent className="p-5">
+                <CardContent className="flex flex-1 flex-col p-5">
                   <motion.div
                     variants={contentVariants}
                     initial="hidden"
                     animate={isInView ? "visible" : "hidden"}
-                    className="flex flex-col gap-4"
+                    className="flex flex-1 flex-col gap-4"
                   >
                     <motion.div
                       variants={itemVariants}
@@ -155,7 +155,7 @@ export const ArticleCard = ({
                       >
                         {article.status}
                       </Badge>
-                      <p className="text-base font-semibold text-foreground">
+                      <p className="line-clamp-1 text-base font-semibold text-foreground">
                         {article.name}
                       </p>
                       <p className="line-clamp-2 text-sm text-muted-foreground">
@@ -184,7 +184,7 @@ export const ArticleCard = ({
                       </div>
                     </motion.div>
 
-                    <MotionSeparator variants={itemVariants} />
+                    <MotionSeparator variants={itemVariants} className="mt-auto" />
 
                     <motion.div
                       variants={itemVariants}

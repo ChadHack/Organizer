@@ -1,20 +1,30 @@
 import type { User } from "@/api/interfaces/user.interface"
-import { pb } from "@/lib/pocketbase"
-import type { RecordModel } from "pocketbase"
+import { supabase } from "@/lib/supabase"
 import { create } from "zustand"
 
-const COLLECTION = "users"
+const TABLE = "users"
+
+export interface UserRow {
+  id: string
+  name: string | null
+  email: string | null
+  isAdmin: boolean | null
+  avatar: string | null
+  status: boolean | null
+  created: string
+  updated: string
+}
 
 /** Mappe l'utilisateur propriétaire embarqué dans une action/un article/une
  * priorité — sans réexpanser ses propres actions/articles (non pertinent
  * ici, éviterait un expand circulaire). */
-export function mapUser(record: RecordModel): User {
+export function mapUser(record: UserRow): User {
   return {
     id: record.id,
     name: record.name ?? "",
     email: record.email ?? "",
     isAdmin: !!record.isAdmin,
-    avatar: record.avatar ? pb.files.getURL(record, record.avatar) : "",
+    avatar: record.avatar ?? "",
     status: !!record.status,
     actions: [],
     articles: [],
@@ -38,7 +48,7 @@ const UNKNOWN_USER: User = {
 
 /** Utilisé quand un enregistrement antérieur à l'ajout du champ `user`
  * n'a pas encore de propriétaire. */
-export function mapUserOrUnknown(record?: RecordModel): User {
+export function mapUserOrUnknown(record?: UserRow | null): User {
   return record ? mapUser(record) : UNKNOWN_USER
 }
 
@@ -46,7 +56,7 @@ export interface UserInput {
   name?: string
   email?: string
   isAdmin?: boolean
-  avatar?: File | null
+  avatar?: string | null
   status?: boolean
 }
 
@@ -67,18 +77,26 @@ export const useUserStore = create<UserState>((set, get) => ({
   fetchUsers: async () => {
     set({ loading: true, error: null })
     try {
-      const records = await pb
-        .collection(COLLECTION)
-        .getFullList({ sort: "-created" })
-      set({ users: records.map(mapUser), loading: false })
+      const { data, error } = await supabase
+        .from(TABLE)
+        .select("*")
+        .order("created", { ascending: false })
+      if (error) throw error
+      set({ users: (data as UserRow[]).map(mapUser), loading: false })
     } catch (err) {
       set({ error: (err as Error).message, loading: false })
     }
   },
 
   updateUser: async (id, data) => {
-    const record = await pb.collection(COLLECTION).update(id, data)
-    const user = mapUser(record)
+    const { data: record, error } = await supabase
+      .from(TABLE)
+      .update(data)
+      .eq("id", id)
+      .select("*")
+      .single()
+    if (error) throw error
+    const user = mapUser(record as UserRow)
     set({
       users: get().users.map((u) => (u.id === id ? user : u)),
     })
@@ -86,7 +104,8 @@ export const useUserStore = create<UserState>((set, get) => ({
   },
 
   deleteUser: async (id) => {
-    await pb.collection(COLLECTION).delete(id)
+    const { error } = await supabase.from(TABLE).delete().eq("id", id)
+    if (error) throw error
     set({ users: get().users.filter((u) => u.id !== id) })
   },
 }))

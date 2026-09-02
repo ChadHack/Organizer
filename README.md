@@ -5,21 +5,23 @@ into actions, followed on a kanban board and laid out on a calendar.
 
 - **Frontend**: React 19 + TypeScript + Vite, Tailwind v4, shadcn/ui
   (`src/components/ui`) and shadcn-space blocks (`src/components/shadcn-space`).
-- **Backend**: [PocketBase](https://pocketbase.io) — schema in
-  `pb_migrations/`, server-side business logic (action cost/status sync) in
-  `pb_hooks/`.
+- **Backend**: [Supabase](https://supabase.com) (Postgres + Auth + Storage +
+  Realtime) — schema, RLS policies and triggers in `supabase/schema.sql`
+  (server-side business logic — action cost/status sync — lives in a
+  Postgres trigger there; its pure reference implementation is in
+  `src/lib/article-action-sync.ts`).
 - **State**: zustand stores per collection in `src/api/stores`.
 
 ## Getting started
 
 ```bash
-pocketbase serve            # backend, http://127.0.0.1:8090
 pnpm install
 pnpm dev                    # frontend, http://localhost:5173
 ```
 
-Copy `.env.example` to `.env` to point the frontend at a different
-PocketBase URL (`VITE_POCKETBASE_URL`).
+Run `supabase/schema.sql` once in your project's SQL Editor, then copy
+`.env.example` to `.env.local` and fill in your project's URL and
+publishable key (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`).
 
 ## Scripts
 
@@ -29,7 +31,7 @@ PocketBase URL (`VITE_POCKETBASE_URL`).
 - `pnpm lint` — ESLint
 - `pnpm format` — Prettier
 - `pnpm test` — Vitest (currently covers the action/article status sync
-  rules in `pb_hooks/lib/article-action-sync.cjs`)
+  rules in `src/lib/article-action-sync.ts`)
 
 ## Adding shadcn/ui components
 

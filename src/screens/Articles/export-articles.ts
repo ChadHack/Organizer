@@ -1,5 +1,4 @@
 import type { Article } from "@/api/interfaces/article.interface"
-import { pb } from "@/lib/pocketbase"
 import { fmtPrice } from "@/lib/utils"
 import { Workbook } from "exceljs"
 import { jsPDF } from "jspdf"
@@ -39,12 +38,13 @@ function downloadBlob(blob: Blob, filename: string) {
  * Product image CDNs (e.g. media.takealot.com) don't send
  * Access-Control-Allow-Origin, so the browser refuses to read their pixels
  * into a canvas. Route those through wsrv.nl, a public image proxy that
- * re-serves the image with permissive CORS headers. Our own PocketBase
- * files already have CORS enabled, so they're loaded directly.
+ * re-serves the image with permissive CORS headers. Our own Supabase
+ * Storage files already have CORS enabled, so they're loaded directly.
  */
 function toExportableImageUrl(url: string) {
   try {
-    if (new URL(url).origin === new URL(pb.baseUrl).origin) return url
+    if (new URL(url).origin === new URL(import.meta.env.VITE_SUPABASE_URL).origin)
+      return url
   } catch {
     // Relative or malformed URL: fall through and let the proxy attempt it.
   }

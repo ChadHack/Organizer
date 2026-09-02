@@ -9,6 +9,13 @@ import { useLocation, useNavigate, type Location } from "react-router-dom"
 
 type OAuthProvider = "google" | "github"
 
+// L'authentification passe désormais par une redirection pleine page vers
+// le provider (contrairement au popup PocketBase, qui gardait l'app
+// montée) : le state react-router `location.state.from` ne survit pas au
+// aller-retour. On le relaie via sessionStorage pour renvoyer malgré tout
+// l'utilisateur sur la page qu'il visitait avant d'être redirigé vers "/".
+const REDIRECT_STORAGE_KEY = "organizer:auth-redirect-from"
+
 function GithubMark() {
   return (
     <svg
@@ -160,13 +167,23 @@ const Authentification = () => {
 
   useEffect(() => {
     if (isValid) {
-      const from = (location.state as { from?: Location } | null)?.from
-      navigate(from?.pathname ?? "/dashboard", { replace: true })
+      const storedFrom = sessionStorage.getItem(REDIRECT_STORAGE_KEY)
+      sessionStorage.removeItem(REDIRECT_STORAGE_KEY)
+      const from =
+        storedFrom ??
+        (location.state as { from?: Location } | null)?.from?.pathname
+      navigate(from ?? "/dashboard", { replace: true })
     }
   }, [isValid, location.state, navigate])
 
   const handleSignIn = (provider: OAuthProvider) => {
     clearError()
+    const from = (location.state as { from?: Location } | null)?.from
+    if (from?.pathname) {
+      sessionStorage.setItem(REDIRECT_STORAGE_KEY, from.pathname)
+    } else {
+      sessionStorage.removeItem(REDIRECT_STORAGE_KEY)
+    }
     loginWithOAuth2(provider)
   }
 

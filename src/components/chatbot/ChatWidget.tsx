@@ -80,7 +80,7 @@ function TypingDots() {
 
 function BotAvatar({ className }: { className?: string }) {
   return (
-    <Avatar className={cn("size-12 shrink-0 bg-neutral-900", className)}>
+    <Avatar className={cn("size-7 shrink-0 bg-neutral-900", className)}>
       <AvatarImage src="/robot.png" alt="Assistant" className="object-cover" />
       <AvatarFallback className="bg-neutral-900 text-neutral-100">
         <Sparkles className="size-3.5" />
@@ -453,7 +453,7 @@ export function ChatWidget() {
             {open ? (
               <X className="size-5.5" />
             ) : (
-              <img src="/robot.png" alt="" className="size-7 object-contain" />
+              <img src="/robot.png" alt="" className="size-13 object-contain" />
             )}
           </motion.span>
         </AnimatePresence>

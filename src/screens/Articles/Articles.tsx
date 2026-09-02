@@ -350,6 +350,11 @@ function TableData({
                 label: "Priorité",
                 options: ["1", "2", "3", "4", "5"],
               },
+              {
+                columnId: "status",
+                label: "Status",
+                options: ["En attente", "En cours", "Bouclé", "Annulé"],
+              },
             ]}
           />
         )}
@@ -359,6 +364,7 @@ function TableData({
 }
 
 const PRIORITY_OPTIONS = ["1", "2", "3", "4", "5"]
+const STATUS_OPTIONS = ["En attente", "En cours", "Bouclé", "Annulé"]
 
 function CardData({
   data,
@@ -375,6 +381,7 @@ function CardData({
   const [search, setSearch] = useState("")
   const [actionFilter, setActionFilter] = useState<string | null>(null)
   const [priorityFilter, setPriorityFilter] = useState<string | null>(null)
+  const [statusFilter, setStatusFilter] = useState<string | null>(null)
   const [filterInputs, setFilterInputs] = useState<Record<string, string>>({})
 
   const filteredData = useMemo(() => {
@@ -387,11 +394,13 @@ function CardData({
       const matchesPriority = priorityFilter
         ? String(a.priority?.priority) === priorityFilter
         : true
-      return matchesName && matchesAction && matchesPriority
+      const matchesStatus = statusFilter ? a.status === statusFilter : true
+      return matchesName && matchesAction && matchesPriority && matchesStatus
     })
-  }, [data, search, actionFilter, priorityFilter])
+  }, [data, search, actionFilter, priorityFilter, statusFilter])
 
-  const hasActiveFilters = !!search || !!actionFilter || !!priorityFilter
+  const hasActiveFilters =
+    !!search || !!actionFilter || !!priorityFilter || !!statusFilter
 
   const uniqueActions = [...new Set(actions.filter((o) => o?.trim()))]
   const actionSearch = filterInputs.action ?? ""
@@ -405,6 +414,13 @@ function CardData({
   const visiblePriorities = prioritySearch
     ? PRIORITY_OPTIONS.filter((o) => o.includes(prioritySearch))
     : PRIORITY_OPTIONS
+
+  const statusSearch = filterInputs.status ?? ""
+  const visibleStatuses = statusSearch
+    ? STATUS_OPTIONS.filter((o) =>
+        o.toLowerCase().includes(statusSearch.toLowerCase())
+      )
+    : STATUS_OPTIONS
 
   return (
     <div className="flex flex-col gap-4">
@@ -482,6 +498,39 @@ function CardData({
           </ComboboxContent>
         </Combobox>
 
+        <Combobox
+          value={statusFilter}
+          onValueChange={(val) => {
+            setStatusFilter(val)
+            setFilterInputs((prev) => ({ ...prev, status: "" }))
+          }}
+          onInputValueChange={(val) =>
+            setFilterInputs((prev) => ({ ...prev, status: val ?? "" }))
+          }
+        >
+          <ComboboxInput
+            placeholder="Status"
+            showTrigger
+            showClear={!!statusFilter}
+            className="w-45"
+          />
+          <ComboboxContent>
+            <ComboboxList>
+              {visibleStatuses.length === 0 ? (
+                <p className="w-full justify-center py-2 text-center text-sm text-muted-foreground">
+                  Aucun résultat.
+                </p>
+              ) : (
+                visibleStatuses.map((option) => (
+                  <ComboboxItem key={option} value={option}>
+                    {option}
+                  </ComboboxItem>
+                ))
+              )}
+            </ComboboxList>
+          </ComboboxContent>
+        </Combobox>
+
         {hasActiveFilters && (
           <Button
             variant="ghost"
@@ -489,6 +538,7 @@ function CardData({
               setSearch("")
               setActionFilter(null)
               setPriorityFilter(null)
+              setStatusFilter(null)
             }}
             className="h-8 px-2 lg:px-3"
           >

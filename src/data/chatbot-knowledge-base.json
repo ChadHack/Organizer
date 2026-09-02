@@ -18,23 +18,23 @@
   "tech_stack": {
     "frontend": "React 19 + TypeScript + Vite, routage via react-router-dom (v7)",
     "state_management": "Zustand (un store par entité : auth.store, article.store, action.store, priority.store, user.store)",
-    "backend": "PocketBase (base de données + auth + fichiers + temps réel), accessible via src/lib/pocketbase.ts (URL configurable par VITE_POCKETBASE_URL, défaut http://127.0.0.1:8090)",
-    "backend_logic": "Hooks serveur PocketBase (JSVM) dans pb_hooks/main.pb.js + pb_hooks/lib/article-action-sync.cjs — recalculent automatiquement le coût et le statut d'une action après toute création/modification/suppression d'un de ses articles.",
+    "backend": "Supabase (base de données Postgres + auth + fichiers + temps réel), accessible via src/lib/supabase.ts (URL configurable par VITE_SUPABASE_URL)",
+    "backend_logic": "Trigger Postgres (sync_action_from_articles, défini dans supabase/schema.sql, logique de référence dans src/lib/article-action-sync.ts) — recalcule automatiquement le coût et le statut d'une action après toute création/modification/suppression d'un de ses articles.",
     "ui_kit": "Tailwind CSS v4 + composants Radix/shadcn (src/components/ui), animations avec 'motion' (Framer Motion), notifications via 'sonner' (toasts)",
     "forms": "react-hook-form + validation zod",
     "tables": "TanStack React Table (tri, filtres, pagination, visibilité des colonnes, persistées en localStorage par tableau)",
     "kanban": "@dnd-kit (glisser-déposer)",
     "export": "exceljs (Excel) et jspdf/jspdf-autotable (PDF), chargés à la demande (lazy) uniquement au clic sur « Extraire »",
-    "auth_method": "OAuth2 uniquement (Google et GitHub) via PocketBase — pas de login par mot de passe, pas d'inscription libre."
+    "auth_method": "OAuth2 uniquement (Google et GitHub) via Supabase Auth — pas de login par mot de passe, pas d'inscription libre."
   },
 
   "authentication": {
     "route": "/",
     "screen_name": "Authentification",
     "how_to_login": "Cliquer sur « Continuer avec Google » ou « Continuer avec GitHub » sur l'écran d'accueil. L'accès est réservé aux comptes de l'organisation (mention « accès équipe » sur l'écran de connexion).",
-    "first_login_behavior": "Au tout premier login OAuth d'un compte, PocketBase provisionne automatiquement un enregistrement utilisateur (authWithOAuth2). Il n'y a pas de formulaire d'inscription manuel — le texte « Demander un compte » sur l'écran de login n'est pas un lien fonctionnel, c'est juste une indication.",
+    "first_login_behavior": "Au tout premier login OAuth d'un compte, un trigger Postgres provisionne automatiquement un enregistrement utilisateur dans public.users. Il n'y a pas de formulaire d'inscription manuel — le texte « Demander un compte » sur l'écran de login n'est pas un lien fonctionnel, c'est juste une indication.",
     "disabled_account": "Si le compte a le champ 'status' à false (désactivé par un administrateur), la tentative de connexion échoue avec le message « Votre compte a été désactivé. Contactez un administrateur. » et la session n'est pas ouverte.",
-    "live_disable_while_connected": "Si un administrateur désactive un compte pendant qu'il est déjà connecté (session ouverte), l'app le détecte en temps réel (abonnement PocketBase realtime sur son propre enregistrement 'users'). Une boîte de dialogue « Compte désactivé » apparaît, non fermable, et l'utilisateur est déconnecté automatiquement après 4 secondes.",
+    "live_disable_while_connected": "Si un administrateur désactive un compte pendant qu'il est déjà connecté (session ouverte), l'app le détecte en temps réel (abonnement Supabase Realtime sur son propre enregistrement 'users'). Une boîte de dialogue « Compte désactivé » apparaît, non fermable, et l'utilisateur est déconnecté automatiquement après 4 secondes.",
     "logout": "Cliquer sur le bouton rouge (icône déconnexion) en bas du rail de navigation. Une confirmation apparaît (toast « Voulez-vous vraiment vous déconnecter ? » avec boutons Oui/Annulée).",
     "redirect_after_login": "Redirige vers /dashboard, ou vers la page initialement demandée si l'utilisateur avait été redirigé vers le login depuis une route protégée."
   },
@@ -116,7 +116,7 @@
       "fields": {
         "name": "Nom affiché",
         "email": "Adresse e-mail (issue du fournisseur OAuth)",
-        "avatar": "Photo de profil (issue du fournisseur OAuth ou fichier PocketBase)",
+        "avatar": "Photo de profil (URL du fournisseur OAuth)",
         "isAdmin": "Booléen — donne accès à l'écran Utilisateurs",
         "status": "Booléen — compte Actif (true) ou Inactif/désactivé (false)"
       }
@@ -124,7 +124,7 @@
   },
 
   "business_rules": {
-    "source": "pb_hooks/main.pb.js + pb_hooks/lib/article-action-sync.cjs — exécuté automatiquement côté serveur PocketBase après toute création, modification ou suppression d'un article. Aucune action manuelle de l'utilisateur ne déclenche ce recalcul : il est invisible et instantané.",
+    "source": "Trigger Postgres (supabase/schema.sql, fonction sync_action_from_articles) — exécuté automatiquement côté base de données après toute création, modification ou suppression d'un article. Aucune action manuelle de l'utilisateur ne déclenche ce recalcul : il est invisible et instantané.",
     "rule_1_cost": "Le coût (cost) d'une action = somme des prix ('price') de tous ses articles dont le statut n'est PAS 'Annulé'. Un article sans prix renseigné compte pour 0.",
     "rule_2_3_4_status": [
       "Si le statut actuel de l'action est déjà 'Annulée', il n'est JAMAIS écrasé automatiquement (une action annulée manuellement le reste tant qu'un humain ne la change pas).",
@@ -201,7 +201,7 @@
     "article_details": {
       "route": "/articles/:id",
       "title": "Détail d'un article",
-      "purpose": "Fiche complète d'un article : grande image, badge de statut, bouton « Ouvrir le lien » si un lien est renseigné, quantité, prix, date estimée, priorité, action liée, informations système (créé le / modifié le / identifiant PocketBase).",
+      "purpose": "Fiche complète d'un article : grande image, badge de statut, bouton « Ouvrir le lien » si un lien est renseigné, quantité, prix, date estimée, priorité, action liée, informations système (créé le / modifié le / identifiant).",
       "header_actions": ["Modifier", "Ordre de priorité", "Dupliquer", "Supprimer"],
       "access": "Atteint via le clic sur « Détails » depuis la liste des articles, ou directement via l'URL /articles/{id}."
     },

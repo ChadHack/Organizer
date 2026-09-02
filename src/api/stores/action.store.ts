@@ -1,26 +1,40 @@
 import type { Action } from "@/api/interfaces/action.interface"
-import { pb } from "@/lib/pocketbase"
-import type { RecordModel } from "pocketbase"
+import { supabase } from "@/lib/supabase"
 import { create } from "zustand"
+import type { ArticleRow } from "./article.store"
 import { mapArticle } from "./article.store"
-import { mapUserOrUnknown } from "./user.store"
+import { mapUserOrUnknown, type UserRow } from "./user.store"
 
-const COLLECTION = "actions"
-const EXPAND = "articles_via_action.priority,user"
+const TABLE = "actions"
+// Relation inverse (articles pointant sur cette action), chaque article
+// embarquant lui-même sa propre priorité — requise par mapArticle. Ni
+// "actions" ni "users" ne sont ré-imbriqués sous ces articles (même
+// périmètre que l'EXPAND PocketBase d'origine : "articles_via_action.priority,user").
+const SELECT = "*, users(*), articles(*, priorities(*))"
 
-export function mapAction(record: RecordModel): Action {
-  const expand = record.expand as
-    { articles_via_action?: RecordModel[]; user?: RecordModel } | undefined
+export interface ActionRow {
+  id: string
+  name: string
+  description: string | null
+  status: string
+  cost: number | null
+  user: string
+  users?: UserRow | null
+  articles?: ArticleRow[] | null
+  created: string
+  updated: string
+}
 
+export function mapAction(record: ActionRow): Action {
   return {
     id: record.id,
     name: record.name,
-    description: record.description,
-    articles: expand?.articles_via_action?.map(mapArticle) ?? [],
-    status: record.status,
+    description: record.description ?? undefined,
+    articles: record.articles?.map(mapArticle) ?? [],
+    status: record.status as Action["status"],
     cost: record.cost ?? 0,
     userId: record.user ?? "",
-    user: mapUserOrUnknown(expand?.user),
+    user: mapUserOrUnknown(record.users),
     created: new Date(record.created),
     updated: new Date(record.updated),
   }
@@ -51,10 +65,15 @@ export const useActionStore = create<ActionState>((set, get) => ({
   fetchActions: async () => {
     set({ loading: true, error: null })
     try {
-      const records = await pb
-        .collection(COLLECTION)
-        .getFullList({ sort: "-created", expand: EXPAND })
-      set({ actions: records.map(mapAction), loading: false })
+      const { data, error } = await supabase
+        .from(TABLE)
+        .select(SELECT)
+        .order("created", { ascending: false })
+      if (error) throw error
+      set({
+        actions: (data as unknown as ActionRow[]).map(mapAction),
+        loading: false,
+      })
     } catch (err) {
       set({ error: (err as Error).message, loading: false })
     }
@@ -63,31 +82,45 @@ export const useActionStore = create<ActionState>((set, get) => ({
   fetchActionsByUser: async (userId) => {
     set({ loading: true, error: null })
     try {
-      const records = await pb.collection(COLLECTION).getFullList({
-        sort: "-created",
-        expand: EXPAND,
-        filter: pb.filter("user = {:userId}", { userId }),
+      const { data, error } = await supabase
+        .from(TABLE)
+        .select(SELECT)
+        .eq("user", userId)
+        .order("created", { ascending: false })
+      if (error) throw error
+      set({
+        actions: (data as unknown as ActionRow[]).map(mapAction),
+        loading: false,
       })
-      set({ actions: records.map(mapAction), loading: false })
     } catch (err) {
       set({ error: (err as Error).message, loading: false })
     }
   },
 
   createAction: async (data) => {
-    const record = await pb
-      .collection(COLLECTION)
-      .create({ ...data, user: pb.authStore.record?.id }, { expand: EXPAND })
-    const action = mapAction(record)
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser()
+    const { data: record, error } = await supabase
+      .from(TABLE)
+      .insert({ ...data, user: authUser?.id })
+      .select(SELECT)
+      .single()
+    if (error) throw error
+    const action = mapAction(record as unknown as ActionRow)
     set({ actions: [...get().actions, action] })
     return action
   },
 
   updateAction: async (id, data) => {
-    const record = await pb
-      .collection(COLLECTION)
-      .update(id, data, { expand: EXPAND })
-    const action = mapAction(record)
+    const { data: record, error } = await supabase
+      .from(TABLE)
+      .update(data)
+      .eq("id", id)
+      .select(SELECT)
+      .single()
+    if (error) throw error
+    const action = mapAction(record as unknown as ActionRow)
     set({
       actions: get().actions.map((a) => (a.id === id ? action : a)),
     })
@@ -95,7 +128,8 @@ export const useActionStore = create<ActionState>((set, get) => ({
   },
 
   deleteAction: async (id) => {
-    await pb.collection(COLLECTION).delete(id)
+    const { error } = await supabase.from(TABLE).delete().eq("id", id)
+    if (error) throw error
     set({ actions: get().actions.filter((a) => a.id !== id) })
   },
 }))
