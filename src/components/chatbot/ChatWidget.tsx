@@ -245,7 +245,7 @@ export function ChatWidget() {
   }
 
   return (
-    <div className="hidden md:block">
+    <div>
       <AnimatePresence>
         {open && (
           <motion.div
@@ -253,9 +253,9 @@ export function ChatWidget() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.96 }}
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed right-6 bottom-24 z-50 flex w-95 max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-[28px] border border-border bg-card shadow-2xl"
+            className="fixed right-4 bottom-22 z-50 flex w-95 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-[28px] border border-border bg-card shadow-2xl sm:right-6 sm:bottom-24 sm:max-w-[calc(100vw-3rem)]"
             style={{
-              height: minimized ? "auto" : "min(640px, calc(100vh - 8rem))",
+              height: minimized ? "auto" : "min(640px, calc(100dvh - 7rem))",
             }}
           >
             {/* Header */}
@@ -439,7 +439,7 @@ export function ChatWidget() {
         size="icon"
         title={open ? "Fermer l'assistant" : "Ouvrir l'assistant"}
         onClick={() => setOpen((o) => !o)}
-        className="fixed right-6 bottom-6 z-50 size-13 rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95"
+        className="fixed right-4 bottom-4 z-50 size-13 rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95 sm:right-6 sm:bottom-6"
       >
         <AnimatePresence mode="wait" initial={false}>
           <motion.span
