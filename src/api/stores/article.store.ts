@@ -4,13 +4,14 @@ import type { RecordModel } from "pocketbase"
 import { create } from "zustand"
 import { mapAction } from "./action.store"
 import { mapPriority } from "./priority.store"
+import { mapUserOrUnknown } from "./user.store"
 
 const COLLECTION = "articles"
-const EXPAND = "priority,action"
+const EXPAND = "priority,action,user"
 
 export function mapArticle(record: RecordModel): Article {
   const expand = record.expand as
-    | { priority?: RecordModel; action?: RecordModel }
+    | { priority?: RecordModel; action?: RecordModel; user?: RecordModel }
     | undefined
 
   if (!expand?.priority) {
@@ -34,8 +35,10 @@ export function mapArticle(record: RecordModel): Article {
     priority: mapPriority(expand.priority),
     actionId: record.action || undefined,
     action: expand.action ? mapAction(expand.action) : undefined,
-    createdAt: new Date(record.created),
-    updatedAt: new Date(record.updated),
+    userId: record.user ?? "",
+    user: mapUserOrUnknown(expand.user),
+    created: new Date(record.created),
+    updated: new Date(record.updated),
   }
 }
 
@@ -68,6 +71,7 @@ interface ArticleState {
   loading: boolean
   error: string | null
   fetchArticles: () => Promise<void>
+  fetchArticlesByUser: (userId: string) => Promise<void>
   createArticle: (data: ArticleInput) => Promise<Article>
   updateArticle: (id: string, data: Partial<ArticleInput>) => Promise<Article>
   deleteArticle: (id: string) => Promise<void>
@@ -91,10 +95,27 @@ export const useArticleStore = create<ArticleState>((set, get) => ({
     }
   },
 
+  fetchArticlesByUser: async (userId) => {
+    set({ loading: true, error: null })
+    try {
+      const records = await pb.collection(COLLECTION).getFullList({
+        sort: "-created",
+        expand: EXPAND,
+        filter: pb.filter("user = {:userId}", { userId }),
+      })
+      set({ articles: records.map(mapArticle), loading: false })
+    } catch (err) {
+      set({ error: (err as Error).message, loading: false })
+    }
+  },
+
   createArticle: async (data) => {
     const record = await pb
       .collection(COLLECTION)
-      .create(toPayload(data), { expand: EXPAND })
+      .create(
+        { ...toPayload(data), user: pb.authStore.record?.id },
+        { expand: EXPAND }
+      )
     const article = mapArticle(record)
     set({ articles: [...get().articles, article] })
     return article

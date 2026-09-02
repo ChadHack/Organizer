@@ -3,14 +3,14 @@ import { pb } from "@/lib/pocketbase"
 import type { RecordModel } from "pocketbase"
 import { create } from "zustand"
 import { mapArticle } from "./article.store"
+import { mapUserOrUnknown } from "./user.store"
 
 const COLLECTION = "actions"
-const EXPAND = "articles_via_action.priority"
+const EXPAND = "articles_via_action.priority,user"
 
 export function mapAction(record: RecordModel): Action {
   const expand = record.expand as
-    | { articles_via_action?: RecordModel[] }
-    | undefined
+    { articles_via_action?: RecordModel[]; user?: RecordModel } | undefined
 
   return {
     id: record.id,
@@ -19,8 +19,10 @@ export function mapAction(record: RecordModel): Action {
     articles: expand?.articles_via_action?.map(mapArticle) ?? [],
     status: record.status,
     cost: record.cost ?? 0,
-    createdAt: new Date(record.created),
-    updatedAt: new Date(record.updated),
+    userId: record.user ?? "",
+    user: mapUserOrUnknown(expand?.user),
+    created: new Date(record.created),
+    updated: new Date(record.updated),
   }
 }
 
@@ -35,6 +37,7 @@ interface ActionState {
   loading: boolean
   error: string | null
   fetchActions: () => Promise<void>
+  fetchActionsByUser: (userId: string) => Promise<void>
   createAction: (data: ActionInput) => Promise<Action>
   updateAction: (id: string, data: Partial<ActionInput>) => Promise<Action>
   deleteAction: (id: string) => Promise<void>
@@ -57,10 +60,24 @@ export const useActionStore = create<ActionState>((set, get) => ({
     }
   },
 
+  fetchActionsByUser: async (userId) => {
+    set({ loading: true, error: null })
+    try {
+      const records = await pb.collection(COLLECTION).getFullList({
+        sort: "-created",
+        expand: EXPAND,
+        filter: pb.filter("user = {:userId}", { userId }),
+      })
+      set({ actions: records.map(mapAction), loading: false })
+    } catch (err) {
+      set({ error: (err as Error).message, loading: false })
+    }
+  },
+
   createAction: async (data) => {
     const record = await pb
       .collection(COLLECTION)
-      .create(data, { expand: EXPAND })
+      .create({ ...data, user: pb.authStore.record?.id }, { expand: EXPAND })
     const action = mapAction(record)
     set({ actions: [...get().actions, action] })
     return action

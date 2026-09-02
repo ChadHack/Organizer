@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/context-menu"
 import { Separator } from "@/components/ui/separator"
 import { cn, fmtPrice } from "@/lib/utils"
+import DuplicateArticle from "@/screens/Articles/actions/duplicate-article"
 import UpdateArticle from "@/screens/Articles/actions/update-article"
 import { UpdatePriority } from "@/screens/Articles/actions/update-priority"
 import { getArticleActionGroups } from "@/screens/Articles/article-actions"
@@ -62,11 +63,13 @@ export const ArticleCard = ({
   const navigate = useNavigate()
   const [showPriorityDialog, setShowPriorityDialog] = useState(false)
   const [showUpdateDialog, setShowUpdateDialog] = useState(false)
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false)
   const actionGroups = getArticleActionGroups(
     article,
     navigate,
     () => setShowPriorityDialog(true),
-    () => setShowUpdateDialog(true)
+    () => setShowUpdateDialog(true),
+    () => setShowDuplicateDialog(true)
   )
 
   const month = format(article.estimateDate, "MMM", {
@@ -77,7 +80,7 @@ export const ArticleCard = ({
   const cta = (
     <MotionButton
       size="sm"
-      className="cursor-pointer rounded-full"
+      className="cursor-pointer rounded-full md:hidden lg:flex lg:items-center"
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
       onClick={article.link ? undefined : onCtaClick}
@@ -251,6 +254,11 @@ export const ArticleCard = ({
         article={article}
         open={showUpdateDialog}
         setOpen={setShowUpdateDialog}
+      />
+      <DuplicateArticle
+        article={article}
+        open={showDuplicateDialog}
+        setOpen={setShowDuplicateDialog}
       />
     </div>
   )

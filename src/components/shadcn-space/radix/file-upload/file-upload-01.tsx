@@ -23,7 +23,9 @@ export const FileUploadStruc: React.FC<FileUploadProps> = ({ onChange }) => {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileChange = (newFiles: File[]) => {
-    setFiles((prev) => [...prev, ...newFiles])
+    // La dropzone est en `multiple: false` : un nouveau choix de fichier
+    // remplace le précédent, il ne s'y ajoute pas.
+    setFiles(newFiles)
     onChange?.(newFiles)
   }
 

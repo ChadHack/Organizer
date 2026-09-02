@@ -1,4 +1,5 @@
 import { useArticleStore } from "@/api/stores/article.store"
+import { useAuthStore } from "@/api/stores/auth.store"
 import { FullCalendar } from "@/components/calendar"
 import { PageHeader } from "@/components/page-header"
 import { motion } from "motion/react"
@@ -6,11 +7,12 @@ import { useEffect, useMemo } from "react"
 import { articlesToEvents } from "../Articles/actions/article-calendar"
 
 const Calendar = () => {
-  const { articles, fetchArticles } = useArticleStore()
+  const { articles, fetchArticlesByUser } = useArticleStore()
+  const user = useAuthStore((state) => state.user)
 
   useEffect(() => {
-    fetchArticles()
-  }, [fetchArticles])
+    if (user) fetchArticlesByUser(user.id)
+  }, [fetchArticlesByUser, user])
 
   const events = useMemo(() => articlesToEvents(articles), [articles])
 

@@ -12,7 +12,7 @@ export const NavData: NavGroup[] = [
     type: "link",
     label: "Tableau de bord",
     icon: LayoutDashboard,
-    href: "/",
+    href: "/dashboard",
   },
   {
     type: "link",

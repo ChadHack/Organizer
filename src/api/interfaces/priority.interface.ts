@@ -1,9 +1,12 @@
 import type { Article } from "./article.interface"
+import type { User } from "./user.interface"
 
 export interface Priority {
   id: string
   priority: number
   articles: Article[]
-  createdAt: Date
-  updatedAt: Date
+  userId: string
+  user: User
+  created: Date
+  updated: Date
 }

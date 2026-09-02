@@ -1,5 +1,6 @@
 import type { Action } from "./action.interface"
 import type { Priority } from "./priority.interface"
+import type { User } from "./user.interface"
 
 export interface Article {
   id: string
@@ -16,6 +17,8 @@ export interface Article {
   priority: Priority
   actionId?: string
   action?: Action
-  createdAt: Date
-  updatedAt: Date
+  userId: string
+  user: User
+  created: Date
+  updated: Date
 }

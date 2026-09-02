@@ -18,6 +18,7 @@ import { fr } from "date-fns/locale"
 import {
   ArrowLeft,
   CalendarDays,
+  Copy,
   Crosshair,
   Edit,
   ExternalLink,
@@ -32,6 +33,7 @@ import { useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { getArticleActionGroups } from "../article-actions"
 import { ARTICLE_STATUS_CONFIG } from "../article-status"
+import DuplicateArticle from "./duplicate-article"
 import UpdateArticle from "./update-article"
 import { UpdatePriority } from "./update-priority"
 
@@ -57,6 +59,7 @@ const ArticleDetails = () => {
   const navigate = useNavigate()
   const { articles, loading, fetchArticles } = useArticleStore()
   const [showUpdateDialog, setShowUpdateDialog] = useState(false)
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false)
   const [showPriorityDialog, setShowPriorityDialog] = useState(false)
 
   useEffect(() => {
@@ -94,12 +97,12 @@ const ArticleDetails = () => {
   const month = format(article.estimateDate, "MMM", {
     locale: fr,
   }).toUpperCase()
-  const day = format(article.estimateDate, "d", { locale: fr })
   const deleteAction = getArticleActionGroups(
     article,
     navigate,
     () => {},
-    () => setShowUpdateDialog(true)
+    () => setShowUpdateDialog(true),
+    () => setShowDuplicateDialog(true)
   )
     .flatMap((g) => g.actions)
     .find((a) => a.key === "delete")
@@ -123,6 +126,13 @@ const ArticleDetails = () => {
           <Button variant="outline" onClick={() => setShowPriorityDialog(true)}>
             <Crosshair className="size-4" />
             <span className="hidden md:flex">Ordre de priorité</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setShowDuplicateDialog(true)}
+          >
+            <Copy className="size-4" />
+            <span className="hidden md:flex">Dupliquer</span>
           </Button>
           {deleteAction && (
             <Button
@@ -156,7 +166,7 @@ const ArticleDetails = () => {
                 {month}
               </span>
               <span className="py-1 text-lg leading-none font-bold text-foreground">
-                {day}
+                {format(article.estimateDate, "d", { locale: fr })}
               </span>
             </div>
             <Button
@@ -272,7 +282,7 @@ const ArticleDetails = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Créé le</span>
                   <span className="font-medium text-foreground">
-                    {format(article.createdAt, "d MMM yyyy 'à' HH:mm", {
+                    {format(article.created, "d MMM yyyy 'à' HH:mm", {
                       locale: fr,
                     })}
                   </span>
@@ -280,7 +290,7 @@ const ArticleDetails = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Modifié le</span>
                   <span className="font-medium text-foreground">
-                    {format(article.updatedAt, "d MMM yyyy 'à' HH:mm", {
+                    {format(article.updated, "d MMM yyyy 'à' HH:mm", {
                       locale: fr,
                     })}
                   </span>
@@ -325,6 +335,11 @@ const ArticleDetails = () => {
         article={article}
         open={showUpdateDialog}
         setOpen={setShowUpdateDialog}
+      />
+      <DuplicateArticle
+        article={article}
+        open={showDuplicateDialog}
+        setOpen={setShowDuplicateDialog}
       />
       <UpdatePriority
         article={article}

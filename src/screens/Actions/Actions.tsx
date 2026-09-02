@@ -1,4 +1,5 @@
 import { useActionStore } from "@/api/stores/action.store"
+import { useAuthStore } from "@/api/stores/auth.store"
 import { DataTableSkeleton } from "@/components/data-tables/data-table-skeleton"
 import { DataTable } from "@/components/data-tables/data-tables"
 import { PageHeader } from "@/components/page-header"
@@ -26,12 +27,13 @@ const STATUS_ORDER: (keyof typeof ACTION_STATUS_CONFIG)[] = [
 ]
 
 const Actions = () => {
-  const { actions, fetchActions, loading } = useActionStore()
+  const { actions, loading, fetchActionsByUser } = useActionStore()
+  const user = useAuthStore((state) => state.user)
   const [showNewActionDialog, setShowNewActionDialog] = useState(false)
 
   useEffect(() => {
-    fetchActions()
-  }, [fetchActions])
+    if (user) fetchActionsByUser(user.id)
+  }, [fetchActionsByUser, user])
   const actionStatus = groupBy(actions, "status")
 
   return (

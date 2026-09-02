@@ -1,6 +1,7 @@
 import type { Article } from "@/api/interfaces/article.interface"
 import { useActionStore } from "@/api/stores/action.store"
 import { useArticleStore } from "@/api/stores/article.store"
+import { useAuthStore } from "@/api/stores/auth.store"
 import { PageHeader } from "@/components/page-header"
 import Chart02 from "@/components/shadcn-space/radix/blocks/chart-02/chart"
 import { Button } from "@/components/ui/button"
@@ -39,13 +40,16 @@ const STATUS_LEGEND: {
 
 const Dashboard = () => {
   const navigate = useNavigate()
-  const { articles, fetchArticles } = useArticleStore()
-  const { actions, fetchActions } = useActionStore()
+  const { articles, fetchArticlesByUser } = useArticleStore()
+  const { actions, fetchActionsByUser } = useActionStore()
+  const user = useAuthStore((state) => state.user)
 
   useEffect(() => {
-    fetchArticles()
-    fetchActions()
-  }, [fetchArticles, fetchActions])
+    if (user) {
+      fetchArticlesByUser(user.id)
+      fetchActionsByUser(user.id)
+    }
+  }, [fetchArticlesByUser, fetchActionsByUser, user])
 
   const countByStatus = (status: Article["status"]) =>
     articles.filter((a) => a.status === status).length

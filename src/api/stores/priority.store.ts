@@ -3,21 +3,23 @@ import { pb } from "@/lib/pocketbase"
 import type { RecordModel } from "pocketbase"
 import { create } from "zustand"
 import { mapArticle } from "./article.store"
+import { mapUserOrUnknown } from "./user.store"
 
 const COLLECTION = "priorities"
-const EXPAND = "articles_via_priority.priority"
+const EXPAND = "articles_via_priority.priority,user"
 
 export function mapPriority(record: RecordModel): Priority {
   const expand = record.expand as
-    | { articles_via_priority?: RecordModel[] }
-    | undefined
+    { articles_via_priority?: RecordModel[]; user?: RecordModel } | undefined
 
   return {
     id: record.id,
     priority: record.priority,
     articles: expand?.articles_via_priority?.map(mapArticle) ?? [],
-    createdAt: new Date(record.created),
-    updatedAt: new Date(record.updated),
+    userId: record.user ?? "",
+    user: mapUserOrUnknown(expand?.user),
+    created: new Date(record.created),
+    updated: new Date(record.updated),
   }
 }
 
@@ -30,8 +32,12 @@ interface PriorityState {
   loading: boolean
   error: string | null
   fetchPriorities: () => Promise<void>
+  fetchPrioritiesByUser: (userId: string) => Promise<void>
   createPriority: (data: PriorityInput) => Promise<Priority>
-  updatePriority: (id: string, data: Partial<PriorityInput>) => Promise<Priority>
+  updatePriority: (
+    id: string,
+    data: Partial<PriorityInput>
+  ) => Promise<Priority>
   deletePriority: (id: string) => Promise<void>
 }
 
@@ -52,10 +58,24 @@ export const usePriorityStore = create<PriorityState>((set, get) => ({
     }
   },
 
+  fetchPrioritiesByUser: async (userId) => {
+    set({ loading: true, error: null })
+    try {
+      const records = await pb.collection(COLLECTION).getFullList({
+        sort: "priority",
+        expand: EXPAND,
+        filter: pb.filter("user = {:userId}", { userId }),
+      })
+      set({ priorities: records.map(mapPriority), loading: false })
+    } catch (err) {
+      set({ error: (err as Error).message, loading: false })
+    }
+  },
+
   createPriority: async (data) => {
     const record = await pb
       .collection(COLLECTION)
-      .create(data, { expand: EXPAND })
+      .create({ ...data, user: pb.authStore.record?.id }, { expand: EXPAND })
     const priority = mapPriority(record)
     set({ priorities: [...get().priorities, priority] })
     return priority

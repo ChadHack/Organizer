@@ -21,7 +21,7 @@ function timestamp() {
  * `toLocaleString("fr-FR")` as a thousands separator renders as "/").
  */
 function pdfSafeText(text: string) {
-  return text.replace(/[  ]/g, " ")
+  return text.replace(/[\u202f\u00a0]/g, " ")
 }
 
 function downloadBlob(blob: Blob, filename: string) {

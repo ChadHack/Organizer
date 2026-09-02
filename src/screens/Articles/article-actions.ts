@@ -1,14 +1,15 @@
 import type { Article } from "@/api/interfaces/article.interface"
 import { useArticleStore } from "@/api/stores/article.store"
 import type { RowActionGroup } from "@/components/data-tables/row-actions-menu"
-import { Crosshair, Edit, ScrollText, Trash } from "lucide-react"
+import { Copy, Crosshair, Edit, ScrollText, Trash } from "lucide-react"
 import { toast } from "sonner"
 
 export function getArticleActionGroups(
   article: Article,
   navigate: (path: string) => void,
   onEditPriority: () => void,
-  onEditArticle: () => void
+  onEditArticle: () => void,
+  onDuplicateArticle: () => void
 ): RowActionGroup[] {
   const deleteArticle = useArticleStore.getState().deleteArticle
   return [
@@ -20,6 +21,12 @@ export function getArticleActionGroups(
           label: "Détails",
           icon: ScrollText,
           onSelect: () => navigate(`/articles/${article.id}`),
+        },
+        {
+          key: "duplicate",
+          label: "Dupliquer",
+          icon: Copy,
+          onSelect: onDuplicateArticle,
         },
         {
           key: "update",

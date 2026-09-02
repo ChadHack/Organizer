@@ -1,5 +1,6 @@
 import type { Article } from "@/api/interfaces/article.interface"
 import { useArticleStore } from "@/api/stores/article.store"
+import { useAuthStore } from "@/api/stores/auth.store"
 import { DataTableSkeleton } from "@/components/data-tables/data-table-skeleton"
 import { DataTable } from "@/components/data-tables/data-tables"
 import { PageHeader } from "@/components/page-header"
@@ -15,6 +16,13 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import {
+  Combobox,
+  ComboboxContent,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox"
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -28,6 +36,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { EmptyStateIllustration } from "@/components/ui/empty-state-illustration"
+import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn, fmtPrice } from "@/lib/utils"
 import groupBy from "lodash/groupBy"
@@ -39,6 +48,7 @@ import {
   Plus,
   Star,
   TableIcon,
+  X,
   type LucideIcon,
 } from "lucide-react"
 import { AnimatePresence, motion, useInView, type Variants } from "motion/react"
@@ -348,63 +358,204 @@ function TableData({
   )
 }
 
-function CardData({ data, loading }: { data: Article[]; loading: boolean }) {
+const PRIORITY_OPTIONS = ["1", "2", "3", "4", "5"]
+
+function CardData({
+  data,
+  loading,
+  actions,
+}: {
+  data: Article[]
+  loading: boolean
+  actions: string[]
+}) {
   const ref = useRef<HTMLDivElement>(null)
   const isInView = useInView(ref, { once: true, amount: 0.2 })
 
-  return data.length > 0 ? (
-    <div className="grid md:grid-cols-3 lg:grid-cols-4">
-      {data.map((a) =>
-        loading ? (
-          <ArticleCardSkeleton key={a.id} />
-        ) : (
-          <ArticleCard key={a.id} article={a} />
-        )
+  const [search, setSearch] = useState("")
+  const [actionFilter, setActionFilter] = useState<string | null>(null)
+  const [priorityFilter, setPriorityFilter] = useState<string | null>(null)
+  const [filterInputs, setFilterInputs] = useState<Record<string, string>>({})
+
+  const filteredData = useMemo(() => {
+    const query = search.trim().toLowerCase()
+    return data.filter((a) => {
+      const matchesName = query ? a.name.toLowerCase().includes(query) : true
+      const matchesAction = actionFilter
+        ? a.action?.name === actionFilter
+        : true
+      const matchesPriority = priorityFilter
+        ? String(a.priority?.priority) === priorityFilter
+        : true
+      return matchesName && matchesAction && matchesPriority
+    })
+  }, [data, search, actionFilter, priorityFilter])
+
+  const hasActiveFilters = !!search || !!actionFilter || !!priorityFilter
+
+  const uniqueActions = [...new Set(actions.filter((o) => o?.trim()))]
+  const actionSearch = filterInputs.action ?? ""
+  const visibleActions = actionSearch
+    ? uniqueActions.filter((o) =>
+        o.toLowerCase().includes(actionSearch.toLowerCase())
+      )
+    : uniqueActions
+
+  const prioritySearch = filterInputs.priority ?? ""
+  const visiblePriorities = prioritySearch
+    ? PRIORITY_OPTIONS.filter((o) => o.includes(prioritySearch))
+    : PRIORITY_OPTIONS
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center gap-4">
+        <Input
+          placeholder="Filtrer par nom.."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="max-w-sm"
+        />
+
+        <Combobox
+          value={actionFilter}
+          onValueChange={(val) => {
+            setActionFilter(val)
+            setFilterInputs((prev) => ({ ...prev, action: "" }))
+          }}
+          onInputValueChange={(val) =>
+            setFilterInputs((prev) => ({ ...prev, action: val ?? "" }))
+          }
+        >
+          <ComboboxInput
+            placeholder="Actions"
+            showTrigger
+            showClear={!!actionFilter}
+            className="w-45"
+          />
+          <ComboboxContent>
+            <ComboboxList>
+              {visibleActions.length === 0 ? (
+                <p className="w-full justify-center py-2 text-center text-sm text-muted-foreground">
+                  Aucun résultat.
+                </p>
+              ) : (
+                visibleActions.map((option) => (
+                  <ComboboxItem key={option} value={option}>
+                    {option}
+                  </ComboboxItem>
+                ))
+              )}
+            </ComboboxList>
+          </ComboboxContent>
+        </Combobox>
+
+        <Combobox
+          value={priorityFilter}
+          onValueChange={(val) => {
+            setPriorityFilter(val)
+            setFilterInputs((prev) => ({ ...prev, priority: "" }))
+          }}
+          onInputValueChange={(val) =>
+            setFilterInputs((prev) => ({ ...prev, priority: val ?? "" }))
+          }
+        >
+          <ComboboxInput
+            placeholder="Priorité"
+            showTrigger
+            showClear={!!priorityFilter}
+            className="w-45"
+          />
+          <ComboboxContent>
+            <ComboboxList>
+              {visiblePriorities.length === 0 ? (
+                <p className="w-full justify-center py-2 text-center text-sm text-muted-foreground">
+                  Aucun résultat.
+                </p>
+              ) : (
+                visiblePriorities.map((option) => (
+                  <ComboboxItem key={option} value={option}>
+                    {option}
+                  </ComboboxItem>
+                ))
+              )}
+            </ComboboxList>
+          </ComboboxContent>
+        </Combobox>
+
+        {hasActiveFilters && (
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setSearch("")
+              setActionFilter(null)
+              setPriorityFilter(null)
+            }}
+            className="h-8 px-2 lg:px-3"
+          >
+            Réinitialiser
+            <X className="ml-2 h-4 w-4" />
+          </Button>
+        )}
+      </div>
+
+      {filteredData.length > 0 ? (
+        <div className="grid md:grid-cols-3 lg:grid-cols-4">
+          {filteredData.map((a) =>
+            loading ? (
+              <ArticleCardSkeleton key={a.id} />
+            ) : (
+              <ArticleCard key={a.id} article={a} />
+            )
+          )}
+        </div>
+      ) : (
+        <div
+          ref={ref}
+          className="flex w-full items-center justify-center px-4 py-10 sm:py-16"
+        >
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate={isInView ? "show" : "hidden"}
+            className="flex w-92 max-w-full flex-col items-center gap-6"
+          >
+            <Empty className="gap-4 border-none p-0">
+              <EmptyHeader className="gap-4">
+                <motion.div variants={itemVariants}>
+                  <EmptyMedia variant="default" className="mb-0">
+                    <EmptyStateIllustration />
+                  </EmptyMedia>
+                </motion.div>
+                <motion.div
+                  variants={itemVariants}
+                  className="flex flex-col items-center gap-0.5"
+                >
+                  <EmptyTitle className="text-lg font-medium text-destructive">
+                    Vide
+                  </EmptyTitle>
+                  <EmptyDescription className="text-center">
+                    {hasActiveFilters
+                      ? "Aucun article ne correspond aux filtres sélectionnés."
+                      : "La liste est vide, aucune donnée trouvée."}
+                  </EmptyDescription>
+                </motion.div>
+              </EmptyHeader>
+            </Empty>
+          </motion.div>
+        </div>
       )}
-    </div>
-  ) : (
-    <div
-      ref={ref}
-      className="flex w-full items-center justify-center px-4 py-10 sm:py-16"
-    >
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate={isInView ? "show" : "hidden"}
-        className="flex w-92 max-w-full flex-col items-center gap-6"
-      >
-        <Empty className="gap-4 border-none p-0">
-          <EmptyHeader className="gap-4">
-            <motion.div variants={itemVariants}>
-              <EmptyMedia variant="default" className="mb-0">
-                <EmptyStateIllustration />
-              </EmptyMedia>
-            </motion.div>
-            <motion.div
-              variants={itemVariants}
-              className="flex flex-col items-center gap-0.5"
-            >
-              <EmptyTitle className="text-lg font-medium text-destructive">
-                Vide
-              </EmptyTitle>
-              <EmptyDescription className="text-center">
-                La liste est vide, aucune donnée trouvée.
-              </EmptyDescription>
-            </motion.div>
-          </EmptyHeader>
-        </Empty>
-      </motion.div>
     </div>
   )
 }
 
 const Articles = () => {
-  const { articles, loading, fetchArticles } = useArticleStore()
+  const { articles, loading, fetchArticlesByUser } = useArticleStore()
+  const user = useAuthStore((state) => state.user)
   const [showNewArticleDialog, setShowNewArticleDialog] = useState(false)
 
   useEffect(() => {
-    fetchArticles()
-  }, [fetchArticles])
+    if (user) fetchArticlesByUser(user.id)
+  }, [fetchArticlesByUser, user])
 
   const articleByPriority = groupBy(articles, "priority.priority")
   const articleByAction = groupBy(articles, "action.name")
@@ -426,7 +577,13 @@ const Articles = () => {
       value: "cardData",
       label: "Carte",
       icon: LayoutGrid,
-      content: <CardData data={articles} loading={loading} />,
+      content: (
+        <CardData
+          data={articles}
+          loading={loading}
+          actions={Object.keys(articleByAction)}
+        />
+      ),
     },
   ]
 

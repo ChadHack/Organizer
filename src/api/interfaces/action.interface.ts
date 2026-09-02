@@ -1,4 +1,5 @@
 import type { Article } from "./article.interface"
+import type { User } from "./user.interface"
 
 export interface Action {
   id: string
@@ -8,6 +9,8 @@ export interface Action {
   status: "En attente" | "En cours" | "Terminée" | "Annulée"
   /** Dérivé automatiquement des articles (somme des price non "Annulé"). Lecture seule. */
   cost: number
-  createdAt: Date
-  updatedAt: Date
+  userId: string
+  user: User
+  created: Date
+  updated: Date
 }

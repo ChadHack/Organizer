@@ -1,6 +1,7 @@
 "use client"
 import type { Article } from "@/api/interfaces/article.interface"
 import { useArticleStore } from "@/api/stores/article.store"
+import { useAuthStore } from "@/api/stores/auth.store"
 import { statusColumns } from "@/components/shadcn-space/radix/blocks/kanban-application-01/data"
 import KanbanColumn from "@/components/shadcn-space/radix/blocks/kanban-application-01/kanban-column"
 import type { KanbanStatus } from "@/components/shadcn-space/radix/blocks/kanban-application-01/types"
@@ -17,14 +18,15 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core"
 import { useEffect, useMemo, useState } from "react"
+import { toast } from "sonner"
 
 const KanbanApplication = () => {
-  const { articles, fetchArticles, updateArticle } = useArticleStore()
+  const { articles, fetchArticlesByUser, updateArticle } = useArticleStore()
   const [activeArticle, setActiveArticle] = useState<Article | null>(null)
-
+  const user = useAuthStore((state) => state.user)
   useEffect(() => {
-    fetchArticles()
-  }, [fetchArticles])
+    if (user) fetchArticlesByUser(user.id)
+  }, [fetchArticlesByUser, user])
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
@@ -65,7 +67,12 @@ const KanbanApplication = () => {
     const targetStatus = findStatus(over.id as string)
     if (!article || !targetStatus || article.status === targetStatus) return
 
-    updateArticle(article.id, { status: targetStatus })
+    updateArticle(article.id, { status: targetStatus }).catch((error) => {
+      toast.error("Impossible de déplacer l'article", {
+        description:
+          error instanceof Error ? error.message : "Veuillez réessayer",
+      })
+    })
   }
 
   return (
@@ -76,7 +83,7 @@ const KanbanApplication = () => {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="custom-scrollbar flex h-full w-full min-w-3xl items-stretch gap-4 overflow-x-auto">
+        <div className="flex custom-scrollbar h-full w-full min-w-3xl items-stretch gap-4 overflow-x-auto">
           {columns.map((column) => (
             <KanbanColumn key={column.id} column={column} />
           ))}
