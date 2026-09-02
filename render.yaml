@@ -2,7 +2,7 @@ services:
   - type: web
     name: Organizer
     runtime: static
-    buildCommand: corepack enable && pnpm install && pnpm build
+    buildCommand: npm install -g pnpm && pnpm install && pnpm build
     staticPublishPath: ./dist
     envVars:
       - key: VITE_SUPABASE_URL
