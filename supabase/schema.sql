@@ -20,7 +20,7 @@ create table public.users (
   email text not null default '',
   "isAdmin" boolean not null default false,
   avatar text,
-  status boolean not null default false,
+  status boolean not null default true,
   created timestamptz not null default now(),
   updated timestamptz not null default now()
 );
@@ -106,8 +106,8 @@ create trigger set_articles_updated_at
 
 -- =============================================================================
 -- Provisioning automatique au premier login OAuth2 (équivalent PocketBase
--- authWithOAuth2 : création du compte "users" au premier login, désactivé
--- par défaut (status=false) tant qu'un admin ne l'active pas).
+-- authWithOAuth2 : création du compte "users" au premier login). Le compte
+-- est actif par défaut (status=true) ; un admin peut le désactiver ensuite.
 -- =============================================================================
 
 create or replace function public.handle_new_user()
@@ -128,7 +128,7 @@ begin
     ),
     new.email,
     new.raw_user_meta_data ->> 'avatar_url',
-    false,
+    true,
     false
   )
   on conflict (id) do nothing;

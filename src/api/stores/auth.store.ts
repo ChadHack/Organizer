@@ -51,7 +51,7 @@ async function fetchOrProvisionProfile(userId: string): Promise<UserRow> {
       name: metadata.full_name ?? metadata.name ?? metadata.user_name ?? "",
       email: authUser.user?.email ?? "",
       avatar: metadata.avatar_url ?? null,
-      status: false,
+      status: true,
       isAdmin: false,
     })
     .select("*")
