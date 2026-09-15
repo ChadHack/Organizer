@@ -16,6 +16,7 @@ const ArticleDetails = lazy(
 const Calendar = lazy(() => import("./screens/Canlendar/Calendar"))
 const Users = lazy(() => import("./screens/Users/Users"))
 const Monitoring = lazy(() => import("./screens/Monitoring/Monitoring"))
+const Paniers = lazy(() => import("./screens/Paniers/Paniers"))
 const Dashboard = lazy(() => import("./screens/Dashboard"))
 const NotFound = lazy(() => import("./screens/NotFound"))
 const Authentification = lazy(() => import("./screens/Auth/Authentification"))
@@ -51,6 +52,7 @@ export function App() {
               <Route path="/articles/:id" element={<ArticleDetails />} />
               <Route path="/mise_en_oeuvre" element={<Monitoring />} />
               <Route path="/planification" element={<Calendar />} />
+              <Route path="/paniers" element={<Paniers />} />
               <Route element={<RequireAdmin />}>
                 <Route path="/utilisateurs" element={<Users />} />
               </Route>

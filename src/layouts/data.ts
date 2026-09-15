@@ -3,6 +3,7 @@ import {
   CalendarDays,
   LayoutDashboard,
   Package,
+  ShoppingBag,
   ShoppingCart,
   Workflow,
 } from "lucide-react"
@@ -37,5 +38,11 @@ export const NavData: NavGroup[] = [
     label: "Plannification",
     icon: CalendarDays,
     href: "/planification",
+  },
+  {
+    type: "link",
+    label: "Paniers",
+    icon: ShoppingBag,
+    href: "/paniers",
   },
 ]

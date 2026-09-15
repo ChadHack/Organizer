@@ -1,0 +1,24 @@
+{
+  "name": "Organizer",
+  "short_name": "Organizer",
+  "description": "Planification des achats et suivi des paniers en ligne",
+  "lang": "fr",
+  "start_url": "/paniers",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0a0a0a",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ],
+  "share_target": {
+    "action": "/paniers",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
+}
