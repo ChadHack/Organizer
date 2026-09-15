@@ -63,7 +63,8 @@ const Dashboard = () => {
 
   const topPriority = useMemo(
     () =>
-      [...articles]
+      articles
+        .filter((a) => a.status !== "Bouclé")
         .sort((a, b) => a.priority.priority - b.priority.priority)
         .slice(0, 5),
     [articles]

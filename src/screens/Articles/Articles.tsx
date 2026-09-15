@@ -607,7 +607,10 @@ const Articles = () => {
     if (user) fetchArticlesByUser(user.id)
   }, [fetchArticlesByUser, user])
 
-  const articleByPriority = groupBy(articles, "priority.priority")
+  const articleByPriority = groupBy(
+    articles.filter((a) => a.status !== "Bouclé"),
+    "priority.priority"
+  )
   const articleByAction = groupBy(articles, "action.name")
 
   const tabs: AnimatedTabItem[] = [

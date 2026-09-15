@@ -75,7 +75,7 @@ export default function DetailsAction({
             <div className="grid custom-scrollbar h-96 gap-3 overflow-y-auto pr-1 md:grid-cols-2">
               {action.articles.map(({ name, description, image, id }) => (
                 <Link
-                  to={"articles/" + id}
+                  to={"/articles/" + id}
                   key={name}
                   type="button"
                   className="flex cursor-pointer items-center gap-3 rounded-xl border p-4 text-left transition-colors hover:bg-muted/50"
